@@ -36,6 +36,10 @@ alwaysApply: false
 
 ## データベース設計
 
+### テーブル設計
+テーブル設計情報は以下を参照：
+- テーブル概要: docs/db/tabel-overview.mdc
+
 ### テーブル構成
 ```
 users (購入者) - products - product_images

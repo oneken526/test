@@ -1,0 +1,256 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+
+# CursorエディタDB設計ルール
+
+## 1. 命名規則
+
+### テーブル名
+- **snake_case**を使用する（例: `product_images`, `order_items`）
+- **複数形**を使用する（例: `users`, `products`, `orders`）
+- 省略形を避け、説明的な名前を使用する
+
+### カラム名
+- **snake_case**を使用する（例: `created_at`, `stock_quantity`）
+- 説明的な名前を使用する（例: `img_id`ではなく`cover_image_id`）
+- ブール値カラムには`is_`を接頭辞として使用する（例: `is_active`）
+
+## 2. 主キー・外部キー
+
+### 主キー
+- 常に`int id PK`を主キーとして使用する
+- 主キーはテーブル定義の最初のカラムにする
+- すべての主キーには自動増分の整数を使用する
+
+### 外部キー
+- `{参照テーブル単数形}_id FK`の形式を使用する（例: `user_id FK`, `product_id FK`）
+- カラム定義で常にFK制約を指定する
+- 外部キーカラムは主キーに合わせて`int`型にする
+
+## 3. 一意制約
+
+- 一意のカラムには`UK`を使用してマークする（例: `varchar email UK`）
+- メールアドレスは常に一意にする
+- ビジネスロジックを考慮して一意制約を定義する
+
+## 4. データ型標準
+
+### 基本データ型
+- **ID**: すべてのIDフィールドには`int`
+- **テキスト**:
+  - 制限のある短い文字列には`varchar`
+  - 長いテキストコンテンツ（説明文、住所など）には`text`
+- **数値**:
+  - 金額には`decimal`（価格、合計額）
+  - 数量やカウンターには`int`
+- **ブール値**: フラグには`boolean`（例: `is_active`）
+- **列挙型**: 定義済み値を持つステータスフィールドには`enum`
+- **タイムスタンプ**: すべての日時フィールドには`timestamp`
+
+### 必須タイムスタンプ
+- 常に`timestamp created_at`を含める
+- 頻繁に更新されるテーブルには`timestamp updated_at`を含める
+- すべてのテーブルで一貫したタイムスタンプ命名を使用する
+
+## 5. リレーションシップ定義
+
+### ER図記法
+- `||--o{`: 一対多の関係
+- `||--o|`: 一対一または一対ゼロの関係
+- リレーションシップには明確な説明を記述する（例: "manages", "has", "places"）
+
+### 特殊なリレーション
+- **自己参照**: カバー画像のような自己参照関係を明確に定義
+- **複合関係**: 注文テーブルのようにユーザーと店舗両方に紐づく場合の設計
+- **中間テーブル**: 多対多関係の適切な中間テーブル設計
+
+## 6. 制約とバリデーション
+
+### データ整合性
+- NOT NULL制約を適切に適用する
+- CHECK制約を使用してデータの妥当性を保証する（例: `price >= 0`）
+- 列挙型の値は事前に定義し、統一する
+
+### 参照整合性
+- 外部キー制約による参照整合性を保つ
+- カスケード削除が必要な場合は明示的に定義する
+- 論理削除が必要なテーブルには`deleted_at`フィールドを追加
+
+## 7. インデックス設計
+
+### 基本方針
+- 外部キーには自動的にインデックスを作成する
+- 検索条件として頻繁に使用されるカラムにインデックスを作成する
+- 一意制約には自動的にインデックスが作成される
+
+### パフォーマンス考慮
+- 複合インデックスはクエリパターンに基づいて設計する
+- 過度なインデックス作成は挿入/更新性能に影響するため注意する
+
+## 8. マルチテナント対応
+
+### テナント分離
+- 店舗別データ分離のための適切な外部キー設計
+- ユーザーと店舗オーナーの明確な分離
+- クロステナントアクセス防止のための制約設計
+
+### 共有データ設計
+- マスターデータの共有方針を明確にする
+- テナント固有データと共通データの適切な分離
+
+## 9. パフォーマンス最適化
+
+### クエリ最適化
+- N+1問題を回避するリレーション設計
+- 適切な正規化レベルの選択
+- 頻繁なクエリパターンを考慮したテーブル設計
+
+### ストレージ最適化
+- 適切なデータ型選択による容量最適化
+- 不要なNULL値を避ける設計
+- アーカイブ戦略の考慮
+
+## 10. テーブル構成定義
+
+### テーブル一覧と構造
+
+#### users（購入者テーブル）
+```
+int id PK
+varchar email UK
+varchar password
+varchar name
+varchar phone
+text address
+timestamp created_at
+timestamp updated_at
+```
+
+#### owners（店舗運営者テーブル）
+```
+int id PK
+varchar email UK
+varchar password
+varchar shop_name
+varchar name
+varchar phone
+text address
+timestamp created_at
+timestamp updated_at
+```
+
+#### products（商品テーブル）
+```
+int id PK
+int owner_id FK
+varchar name
+text description
+decimal price
+int stock_quantity
+int cover_image_id FK
+boolean is_active
+timestamp created_at
+timestamp updated_at
+```
+
+#### product_images（商品画像テーブル）
+```
+int id PK
+int product_id FK
+varchar image_path
+int display_order
+timestamp created_at
+```
+
+#### orders（注文テーブル）
+```
+int id PK
+int user_id FK
+int owner_id FK
+decimal total_amount
+enum status
+varchar shipping_name
+varchar shipping_phone
+text shipping_address
+timestamp order_date
+timestamp updated_at
+```
+
+#### order_items（注文商品詳細テーブル）
+```
+int id PK
+int order_id FK
+int product_id FK
+int quantity
+decimal price
+timestamp created_at
+```
+
+### テーブル間リレーションシップ
+
+```
+owners ||--o{ products : "manages"
+products ||--o{ product_images : "has"
+products ||--o| product_images : "cover_image"
+users ||--o{ orders : "places"
+owners ||--o{ orders : "receives"
+orders ||--o{ order_items : "contains"
+products ||--o{ order_items : "included_in"
+```
+
+### 列挙型定義
+
+#### orders.status
+- `pending` - 注文確認中
+- `confirmed` - 注文確定
+- `processing` - 処理中
+- `shipped` - 発送済み
+- `delivered` - 配達完了
+- `cancelled` - キャンセル済み
+- `refunded` - 返金済み
+
+### 重要な制約とルール
+
+#### ビジネスルール
+- **商品管理**: 1人のownerは複数のproductを管理可能
+- **商品画像**: 1つのproductは複数のproduct_imageを持ち、その中から1つをcover_imageとして指定
+- **注文処理**: orderはuserとowner両方に紐づく（マルチテナント対応）
+- **在庫管理**: product.stock_quantityは0以上の値のみ許可
+- **価格管理**: price, total_amountは0以上の値のみ許可
+
+#### データ整合性制約
+- `products.cover_image_id`は`product_images.id`を参照し、かつ同一product内の画像のみ許可
+- `order_items.price`は注文時の商品価格を保持（履歴保持）
+- 論理削除が必要な場合は、各テーブルに`deleted_at timestamp NULL`を追加検討
+
+### インデックス推奨設定
+
+#### パフォーマンス重要インデックス
+```sql
+-- 商品検索用
+CREATE INDEX idx_products_owner_active ON products(owner_id, is_active);
+CREATE INDEX idx_products_name ON products(name);
+
+-- 注文検索用
+CREATE INDEX idx_orders_user_date ON orders(user_id, order_date);
+CREATE INDEX idx_orders_owner_status ON orders(owner_id, status);
+
+-- 商品画像表示用
+CREATE INDEX idx_product_images_product_order ON product_images(product_id, display_order);
+```
+
+## 11. 拡張性とメンテナンス
+
+### スキーマ進化
+- カラム追加に対する柔軟な設計
+- バージョン管理が必要な場合の`version`フィールド
+- メタデータ格納のための`metadata` JSON フィールドの検討
+
+### ドキュメント化
+- 各テーブルの用途と役割を明記する
+- 複雑なリレーションシップには説明コメントを追加する
+- 列挙型の値とその意味を文書化する
+- ビジネスルールや制約事項を記録する

@@ -169,34 +169,142 @@
 
 <script>
 function addToCart(productId) {
-    // カートに追加する処理（後で実装）
-    console.log('Add to cart:', productId);
+    // CSRFトークンを取得
+    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-    // おしゃれな通知を表示
-    const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-gradient-to-r from-[#f26a8d] to-[#f49cbb] text-white px-6 py-4 rounded-xl shadow-2xl z-50 transform translate-x-full transition-transform duration-500';
-    notification.innerHTML = `
-        <div class="flex items-center">
-            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            <span class="font-semibold">カートに追加しました！</span>
+    // カートに追加
+    fetch('{{ route("user.cart.add") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': token,
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            quantity: 1
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showModal(data.message, data.product_name);
+            updateCartCount(data.cart_count);
+        } else {
+            showErrorModal(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showErrorModal('エラーが発生しました。');
+    });
+}
+
+function showModal(message, productName) {
+    // モーダルオーバーレイ
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center';
+    overlay.id = 'cart-modal-overlay';
+
+    // モーダルコンテンツ
+    const modal = document.createElement('div');
+    modal.className = 'bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 transform scale-95 opacity-0 transition-all duration-300';
+    modal.innerHTML = `
+        <div class="text-center">
+            <div class="w-16 h-16 bg-gradient-to-r from-[#f26a8d] to-[#f49cbb] rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-[#880d1e] mb-2">商品を追加しました</h3>
+            <p class="text-[#dd2d4a] mb-6">${productName}</p>
+            <div class="flex space-x-3">
+                <button onclick="closeModal()" class="flex-1 bg-gradient-to-r from-[#dd2d4a] to-[#f26a8d] text-white py-3 px-6 rounded-xl hover:from-[#880d1e] hover:to-[#dd2d4a] transition-all duration-300 font-semibold">
+                    買い物を続ける
+                </button>
+                <a href="{{ route('user.cart.index') }}" class="flex-1 bg-gradient-to-r from-[#f26a8d] to-[#f49cbb] text-white py-3 px-6 rounded-xl hover:from-[#dd2d4a] hover:to-[#f26a8d] transition-all duration-300 font-semibold text-center">
+                    カートを見る
+                </a>
+            </div>
         </div>
     `;
 
-    document.body.appendChild(notification);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
 
     // アニメーション
     setTimeout(() => {
-        notification.style.transform = 'translateX(0)';
+        modal.classList.remove('scale-95', 'opacity-0');
+        modal.classList.add('scale-100', 'opacity-100');
     }, 100);
-
-    setTimeout(() => {
-        notification.style.transform = 'translateX(full)';
-        setTimeout(() => {
-            document.body.removeChild(notification);
-        }, 500);
-    }, 3000);
 }
+
+function showErrorModal(message) {
+    // エラーモーダルオーバーレイ
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center';
+    overlay.id = 'error-modal-overlay';
+
+    // エラーモーダルコンテンツ
+    const modal = document.createElement('div');
+    modal.className = 'bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 transform scale-95 opacity-0 transition-all duration-300';
+    modal.innerHTML = `
+        <div class="text-center">
+            <div class="w-16 h-16 bg-gradient-to-r from-red-400 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-[#880d1e] mb-2">エラー</h3>
+            <p class="text-[#dd2d4a] mb-6">${message}</p>
+            <button onclick="closeModal()" class="bg-gradient-to-r from-[#dd2d4a] to-[#f26a8d] text-white py-3 px-6 rounded-xl hover:from-[#880d1e] hover:to-[#dd2d4a] transition-all duration-300 font-semibold">
+                閉じる
+            </button>
+        </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // アニメーション
+    setTimeout(() => {
+        modal.classList.remove('scale-95', 'opacity-0');
+        modal.classList.add('scale-100', 'opacity-100');
+    }, 100);
+}
+
+function closeModal() {
+    const overlay = document.getElementById('cart-modal-overlay') || document.getElementById('error-modal-overlay');
+    if (overlay) {
+        const modal = overlay.querySelector('div');
+        modal.classList.remove('scale-100', 'opacity-100');
+        modal.classList.add('scale-95', 'opacity-0');
+
+        setTimeout(() => {
+            document.body.removeChild(overlay);
+        }, 300);
+    }
+}
+
+function updateCartCount(count) {
+    // ヘッダーのカートカウントを更新（もし存在する場合）
+    const cartCountElement = document.getElementById('cart-count');
+    if (cartCountElement) {
+        cartCountElement.textContent = count;
+    }
+}
+
+// ESCキーでモーダルを閉じる
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeModal();
+    }
+});
+
+// オーバーレイクリックでモーダルを閉じる
+document.addEventListener('click', function(event) {
+    if (event.target.classList.contains('fixed') && event.target.classList.contains('bg-black/50')) {
+        closeModal();
+    }
+});
 </script>
 @endsection

@@ -79,7 +79,7 @@
             </a>
 
             @if($product->isInStock())
-                <button class="bg-gradient-to-r from-[#f26a8d] to-[#f49cbb] text-white py-3 px-4 rounded-xl hover:from-[#dd2d4a] hover:to-[#f26a8d] transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg"
+                <button class="bg-gradient-to-r from-[#f26a8d] to-[#f49cbb] text-white py-3 px-4 rounded-xl hover:from-[#dd2d4a] hover:to-[#f26a8d] transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg cursor-pointer"
                         onclick="addToCart({{ $product->id }})">
                     カートに追加
                 </button>

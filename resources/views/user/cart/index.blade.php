@@ -20,7 +20,7 @@
                 </div>
 
                 @if(count($cart) > 0)
-                    <button onclick="clearCart()" class="bg-gradient-to-r from-red-400 to-red-500 text-white px-6 py-3 rounded-xl hover:from-red-500 hover:to-red-600 transition-all duration-300 font-semibold shadow-lg">
+                    <button onclick="clearCart()" class="bg-gradient-to-r from-red-400 to-red-500 text-white px-6 py-3 rounded-xl hover:from-red-500 hover:to-red-600 transition-all duration-300 font-semibold shadow-lg cursor-pointer">
                         カートを空にする
                     </button>
                 @endif
@@ -60,7 +60,7 @@
                                     <!-- 数量調整 -->
                                     <div class="flex items-center space-x-2">
                                         <button onclick="updateQuantity({{ $productId }}, {{ $item['quantity'] - 1 }})"
-                                                class="w-8 h-8 bg-gradient-to-r from-[#f26a8d] to-[#f49cbb] text-white rounded-lg hover:from-[#dd2d4a] hover:to-[#f26a8d] transition-all duration-300 flex items-center justify-center"
+                                                class="w-8 h-8 bg-gradient-to-r from-[#f26a8d] to-[#f49cbb] text-white rounded-lg hover:from-[#dd2d4a] hover:to-[#f26a8d] transition-all duration-300 flex items-center justify-center cursor-pointer"
                                                 {{ $item['quantity'] <= 1 ? 'disabled' : '' }}>
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
@@ -72,7 +72,7 @@
                                         </span>
 
                                         <button onclick="updateQuantity({{ $productId }}, {{ $item['quantity'] + 1 }})"
-                                                class="w-8 h-8 bg-gradient-to-r from-[#f26a8d] to-[#f49cbb] text-white rounded-lg hover:from-[#dd2d4a] hover:to-[#f26a8d] transition-all duration-300 flex items-center justify-center"
+                                                class="w-8 h-8 bg-gradient-to-r from-[#f26a8d] to-[#f49cbb] text-white rounded-lg hover:from-[#dd2d4a] hover:to-[#f26a8d] transition-all duration-300 flex items-center justify-center cursor-pointer"
                                                 {{ $item['quantity'] >= $item['stock_quantity'] ? 'disabled' : '' }}>
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -89,7 +89,7 @@
 
                                     <!-- 削除ボタン -->
                                     <button onclick="removeFromCart({{ $productId }})"
-                                            class="text-red-500 hover:text-red-700 transition-colors duration-300">
+                                            class="text-red-500 hover:text-red-700 transition-colors duration-300 cursor-pointer">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                         </svg>
@@ -125,7 +125,7 @@
                         </div>
 
                         <button onclick="proceedToCheckout()"
-                                class="w-full bg-gradient-to-r from-[#dd2d4a] to-[#f26a8d] text-white py-4 px-6 rounded-xl hover:from-[#880d1e] hover:to-[#dd2d4a] transition-all duration-300 font-bold text-lg shadow-lg transform hover:scale-105">
+                                class="w-full bg-gradient-to-r from-[#dd2d4a] to-[#f26a8d] text-white py-4 px-6 rounded-xl hover:from-[#880d1e] hover:to-[#dd2d4a] transition-all duration-300 font-bold text-lg shadow-lg transform hover:scale-105 cursor-pointer">
                             レジに進む
                         </button>
 

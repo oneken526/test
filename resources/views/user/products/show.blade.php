@@ -130,7 +130,7 @@
                 <!-- アクションボタン -->
                 <div class="space-y-4">
                     @if($product->isInStock())
-                        <button class="w-full bg-gradient-to-r from-[#dd2d4a] to-[#f26a8d] text-white py-4 px-6 rounded-2xl hover:from-[#880d1e] hover:to-[#dd2d4a] transition-all duration-300 transform hover:scale-105 font-bold text-lg shadow-xl"
+                        <button class="w-full bg-gradient-to-r from-[#dd2d4a] to-[#f26a8d] text-white py-4 px-6 rounded-2xl hover:from-[#880d1e] hover:to-[#dd2d4a] transition-all duration-300 transform hover:scale-105 font-bold text-lg shadow-xl cursor-pointer"
                                 onclick="addToCart({{ $product->id }})">
                             🛒 カートに追加
                         </button>
@@ -141,10 +141,10 @@
                     @endif
 
                     <div class="flex space-x-4">
-                        <button class="flex-1 bg-gradient-to-r from-[#f26a8d] to-[#f49cbb] text-white py-3 px-6 rounded-xl hover:from-[#dd2d4a] hover:to-[#f26a8d] transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg">
+                        <button class="flex-1 bg-gradient-to-r from-[#f26a8d] to-[#f49cbb] text-white py-3 px-6 rounded-xl hover:from-[#dd2d4a] hover:to-[#f26a8d] transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg cursor-pointer">
                             ❤️ お気に入り
                         </button>
-                        <button class="flex-1 bg-gradient-to-r from-[#cbeef3] to-[#8dd5e6] text-[#880d1e] py-3 px-6 rounded-xl hover:from-[#8dd5e6] hover:to-[#cbeef3] transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg">
+                        <button class="flex-1 bg-gradient-to-r from-[#cbeef3] to-[#8dd5e6] text-[#880d1e] py-3 px-6 rounded-xl hover:from-[#8dd5e6] hover:to-[#cbeef3] transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg cursor-pointer">
                             📤 シェア
                         </button>
                     </div>

@@ -9,12 +9,9 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <!-- ページタイトル -->
-        <div class="mb-8 text-center">
-            <h1 class="text-4xl font-bold bg-gradient-to-r from-[#880d1e] to-[#dd2d4a] bg-clip-text text-transparent mb-2">
-                商品一覧
-            </h1>
-            <p class="text-lg text-[#dd2d4a] font-medium">お気に入りの商品を見つけてください</p>
-            <div class="w-24 h-1 bg-gradient-to-r from-[#f26a8d] to-[#f49cbb] mx-auto mt-4 rounded-full"></div>
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">商品一覧</h1>
+            <p class="mt-2 text-gray-600">お気に入りの商品を見つけてください</p>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-8">

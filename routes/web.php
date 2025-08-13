@@ -30,6 +30,13 @@ Route::prefix('user')->name('user.')->group(function () {
     Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
 });
 
+// Owner routes
+Route::prefix('owner')->name('owner.')->group(function () {
+    // 認証関連
+    Route::get('/login', \App\Livewire\Owner\Auth\Login::class)->name('login');
+    Route::get('/register', \App\Livewire\Owner\Auth\Register::class)->name('register');
+});
+
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');

@@ -1,16 +1,16 @@
-<div class="min-h-screen bg-gradient-to-br from-[#fef2f2] via-[#fce7f3] to-[#fdf2f8] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-gradient-to-br from-[#e9e3e6] via-[#c3baba] to-[#9a8f97] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="w-full max-w-md lg:max-w-lg xl:max-w-xl">
         <!-- ロゴとタイトル -->
         <div class="text-center mb-8">
             <div class="mb-6">
-                <a href="{{ route('user.products.index') }}" class="text-4xl font-bold bg-gradient-to-r from-[#880d1e] to-[#dd2d4a] bg-clip-text text-transparent hover:from-[#dd2d4a] hover:to-[#f26a8d] transition-all duration-300">
+                <a href="{{ route('user.products.index') }}" class="text-4xl font-bold bg-gradient-to-r from-[#736f72] to-[#9a8f97] bg-clip-text text-transparent hover:from-[#9a8f97] hover:to-[#c3baba] transition-all duration-300">
                     EC Shop
                 </a>
             </div>
-            <h2 class="text-3xl font-bold bg-gradient-to-r from-[#880d1e] to-[#dd2d4a] bg-clip-text text-transparent mb-2">
-                ログイン
+            <h2 class="text-3xl font-bold bg-gradient-to-r from-[#736f72] to-[#9a8f97] bg-clip-text text-transparent mb-2">
+                オーナーログイン
             </h2>
-            <p class="text-[#dd2d4a] text-lg">アカウントにログインしてショッピングを続けましょう</p>
+            <p class="text-[#736f72] text-lg">オーナーアカウントにログインして店舗管理を続けましょう</p>
         </div>
 
         <!-- フォーム -->
@@ -21,7 +21,7 @@
             <form wire:submit="login" class="space-y-6">
                 <!-- メールアドレス -->
                 <div>
-                    <label for="email" class="block text-sm font-semibold text-[#dd2d4a] mb-2">
+                    <label for="email" class="block text-sm font-semibold text-[#736f72] mb-2">
                         メールアドレス <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
@@ -32,11 +32,11 @@
                             required
                             autofocus
                             autocomplete="email"
-                            placeholder="example@email.com"
-                            class="w-full px-4 py-3 border-2 border-[#f49cbb]/30 rounded-xl focus:outline-none focus:border-[#f26a8d] focus:ring-4 focus:ring-[#f26a8d]/20 transition-all duration-300 bg-white/50 backdrop-blur-sm"
+                            placeholder="owner@example.com"
+                            class="w-full px-4 py-3 border-2 border-[#c3baba]/30 rounded-xl focus:outline-none focus:border-[#9a8f97] focus:ring-4 focus:ring-[#9a8f97]/20 transition-all duration-300 bg-white/50 backdrop-blur-sm"
                         >
                         <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <svg class="w-5 h-5 text-[#f26a8d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-[#9a8f97]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                             </svg>
                         </div>
@@ -48,7 +48,7 @@
 
                 <!-- パスワード -->
                 <div>
-                    <label for="password" class="block text-sm font-semibold text-[#dd2d4a] mb-2">
+                    <label for="password" class="block text-sm font-semibold text-[#736f72] mb-2">
                         パスワード <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
@@ -59,10 +59,10 @@
                             required
                             autocomplete="current-password"
                             placeholder="パスワードを入力"
-                            class="w-full px-4 py-3 border-2 border-[#f49cbb]/30 rounded-xl focus:outline-none focus:border-[#f26a8d] focus:ring-4 focus:ring-[#f26a8d]/20 transition-all duration-300 bg-white/50 backdrop-blur-sm"
+                            class="w-full px-4 py-3 border-2 border-[#c3baba]/30 rounded-xl focus:outline-none focus:border-[#9a8f97] focus:ring-4 focus:ring-[#9a8f97]/20 transition-all duration-300 bg-white/50 backdrop-blur-sm"
                         >
                         <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <svg class="w-5 h-5 text-[#f26a8d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-[#9a8f97]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                             </svg>
                         </div>
@@ -75,7 +75,7 @@
                 <!-- パスワードを忘れた場合 -->
                 @if (Route::has('password.request'))
                     <div class="text-right">
-                        <a href="{{ route('password.request') }}" class="text-sm text-[#f26a8d] hover:text-[#880d1e] underline transition-colors duration-300">
+                        <a href="{{ route('password.request') }}" class="text-sm text-[#9a8f97] hover:text-[#736f72] underline transition-colors duration-300">
                             パスワードを忘れた場合
                         </a>
                     </div>
@@ -87,9 +87,9 @@
                         wire:model="remember"
                         type="checkbox"
                         id="remember"
-                        class="rounded border-[#f26a8d] text-[#dd2d4a] focus:ring-[#f26a8d] focus:ring-offset-0"
+                        class="rounded border-[#9a8f97] text-[#736f72] focus:ring-[#9a8f97] focus:ring-offset-0"
                     >
-                    <label for="remember" class="text-sm text-[#dd2d4a]">
+                    <label for="remember" class="text-sm text-[#736f72]">
                         ログイン状態を記憶する
                     </label>
                 </div>
@@ -97,7 +97,7 @@
                 <!-- ログインボタン -->
                 <button
                     type="submit"
-                    class="w-full bg-gradient-to-r from-[#dd2d4a] to-[#f26a8d] text-white py-4 px-6 rounded-xl hover:from-[#880d1e] hover:to-[#dd2d4a] transition-all duration-300 transform hover:scale-105 font-bold text-lg shadow-lg"
+                    class="w-full bg-gradient-to-r from-[#736f72] to-[#9a8f97] text-white py-4 px-6 rounded-xl hover:from-[#9a8f97] hover:to-[#c3baba] transition-all duration-300 transform hover:scale-105 font-bold text-lg shadow-lg"
                 >
                     <div class="flex items-center justify-center space-x-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,11 +109,11 @@
             </form>
 
             <!-- 新規登録リンク -->
-            @if (Route::has('register'))
+            @if (Route::has('owner.register'))
                 <div class="mt-6 text-center">
-                    <p class="text-[#dd2d4a] text-sm">
-                        アカウントをお持ちでないですか？
-                        <a href="{{ route('register') }}" class="text-[#f26a8d] hover:text-[#880d1e] font-semibold underline transition-colors duration-300">
+                    <p class="text-[#736f72] text-sm">
+                        オーナーアカウントをお持ちでないですか？
+                        <a href="{{ route('owner.register') }}" class="text-[#9a8f97] hover:text-[#736f72] font-semibold underline transition-colors duration-300">
                             新規登録
                         </a>
                     </p>
@@ -123,7 +123,7 @@
 
         <!-- フッター情報 -->
         <div class="mt-8 text-center">
-            <p class="text-xs text-[#f26a8d]">
+            <p class="text-xs text-[#9a8f97]">
                 © 2024 EC Shop. All rights reserved.
             </p>
         </div>

@@ -18,7 +18,8 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->unsignedInteger('price');
             $table->unsignedInteger('stock_quantity')->default(0);
-            $table->string('category')->nullable();
+            $table->tinyInteger('category')->nullable()->comment('1:おもちゃ, 2:スポーツ, 3:家具, 4:書籍, 5:美容, 6:衣類, 7:電子機器, 8:食品');
+            $table->enum('status', ['1', '2', '3', '4'])->default('1')->comment('1:下書き, 2:販売中, 3:販売停止, 4:在庫切れ');
             $table->boolean('is_active')->default(true);
             $table->unsignedBigInteger('cover_image_id')->nullable();
             $table->boolean('is_featured')->default(false);

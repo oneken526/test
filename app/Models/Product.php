@@ -99,6 +99,25 @@ class Product extends Model
     }
 
     /**
+     * カテゴリ名を取得
+     */
+    public function getCategoryNameAttribute(): string
+    {
+        $categories = [
+            1 => 'おもちゃ',
+            2 => 'スポーツ',
+            3 => '家具',
+            4 => '書籍',
+            5 => '美容',
+            6 => '衣類',
+            7 => '電子機器',
+            8 => '食品'
+        ];
+
+        return $categories[$this->category] ?? 'その他';
+    }
+
+    /**
      * 購入可能かチェック
      */
     public function isPurchasable(): bool

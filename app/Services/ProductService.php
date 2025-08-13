@@ -28,9 +28,11 @@ class ProductService
             // 価格と画像のフォーマット処理
             $products->getCollection()->transform(function ($product) {
                 $product->formatted_price = PriceHelper::format($product->price);
+                // dump($product);
                 $product->image_url = ImageHelper::getProductThumbnailUrl($product);
                 return $product;
             });
+            // dd("aaa");
 
             return $products;
         } catch (\Exception $e) {
@@ -86,7 +88,7 @@ class ProductService
     /**
      * カテゴリ別商品を取得
      */
-    public function getProductsByCategory(string $category, int $perPage = 12): LengthAwarePaginator
+    public function getProductsByCategory(int $category, int $perPage = 12): LengthAwarePaginator
     {
         try {
             $products = $this->productRepository->getProductsByCategory($category, $perPage);
@@ -118,7 +120,7 @@ class ProductService
             }
 
             // 価格と画像のフォーマット処理
-            $product->formatted_price = PriceHelper::format($product->price);
+            $product->price = PriceHelper::format($product->price);
             $product->image_url = ImageHelper::getProductMainImageUrl($product);
             $product->thumbnail_url = ImageHelper::getProductThumbnailUrl($product);
 

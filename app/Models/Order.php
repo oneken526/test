@@ -61,8 +61,8 @@ class Order extends Model
      * デフォルト値
      */
     protected $attributes = [
-        'status' => 'pending',
-        'payment_status' => 'pending',
+        'status' => '1',
+        'payment_status' => '1',
         'shipping_fee' => 0,
         'tax_amount' => 0,
     ];
@@ -124,7 +124,7 @@ class Order extends Model
      */
     public function isCancellable(): bool
     {
-        return in_array($this->status, ['pending', 'confirmed', 'preparing']);
+        return in_array($this->status, ['1', '2', '3']);
     }
 
     /**
@@ -156,7 +156,7 @@ class Order extends Model
      */
     public function isPaid(): bool
     {
-        return $this->payment_status === 'completed';
+        return $this->payment_status === '3';
     }
 
     /**
@@ -165,13 +165,13 @@ class Order extends Model
     public function getStatusLabelAttribute(): string
     {
         return match($this->status) {
-            'pending' => '注文確認中',
-            'confirmed' => '注文確定',
-            'preparing' => '準備中',
-            'shipped' => '発送済み',
-            'delivered' => '配達完了',
-            'cancelled' => 'キャンセル',
-            'completed' => '完了',
+            '1' => '注文確認中',
+            '2' => '注文確定',
+            '3' => '準備中',
+            '4' => '発送済み',
+            '5' => '配達完了',
+            '6' => 'キャンセル',
+            '7' => '完了',
             default => '不明',
         };
     }
@@ -182,11 +182,11 @@ class Order extends Model
     public function getPaymentStatusLabelAttribute(): string
     {
         return match($this->payment_status) {
-            'pending' => '支払い待ち',
-            'processing' => '処理中',
-            'completed' => '支払い完了',
-            'failed' => '支払い失敗',
-            'refunded' => '返金済み',
+            '1' => '支払い待ち',
+            '2' => '処理中',
+            '3' => '支払い完了',
+            '4' => '支払い失敗',
+            '5' => '返金済み',
             default => '不明',
         };
     }
@@ -226,7 +226,7 @@ class Order extends Model
      */
     public function scopeCompleted($query)
     {
-        return $query->where('status', 'completed');
+        return $query->where('status', '7');
     }
 
     /**
@@ -234,6 +234,6 @@ class Order extends Model
      */
     public function scopePaid($query)
     {
-        return $query->where('payment_status', 'completed');
+        return $query->where('payment_status', '3');
     }
 }

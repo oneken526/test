@@ -201,16 +201,45 @@ orders ||--o{ order_items : "contains"
 products ||--o{ order_items : "included_in"
 ```
 
-### 列挙型定義
+### Enum定義
 
 #### orders.status
-- `pending` - 注文確認中
-- `confirmed` - 注文確定
-- `processing` - 処理中
-- `shipped` - 発送済み
-- `delivered` - 配達完了
-- `cancelled` - キャンセル済み
-- `refunded` - 返金済み
+- `1` - 注文確認中
+- `2` - 注文確定
+- `3` - 処理中
+- `4` - 発送済み
+- `5` - 配達完了
+- `6` - キャンセル済み
+- `7` - 返金済み
+
+#### orders.payment_method
+- `1` - クレジットカード
+- `2` - 銀行振込
+- `3` - 代金引換
+- `4` - デジタルウォレット
+
+#### orders.payment_status
+- `1` - 未決済
+- `2` - 処理中
+- `3` - 決済完了
+- `4` - 決済失敗
+- `5` - 返金済み
+
+#### products.status
+- `1` - 下書き
+- `2` - 販売中
+- `3` - 販売停止
+- `4` - 在庫切れ
+
+#### products.category
+- `1` - おもちゃ
+- `2` - スポーツ
+- `3` - 家具
+- `4` - 書籍
+- `5` - 美容
+- `6` - 衣類
+- `7` - 電子機器
+- `8` - 食品
 
 ### 重要な制約とルール
 

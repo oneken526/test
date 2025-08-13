@@ -19,7 +19,7 @@ class ProductRepository
         // 検索フィルター適用
         $this->applyFilters($query, $filters);
 
-        return $query->orderBy('created_at', 'desc')
+        return $query->orderBy('created_at', 'asc')
                     ->paginate($perPage);
     }
 
@@ -54,7 +54,7 @@ class ProductRepository
     /**
      * カテゴリ別商品を取得
      */
-    public function getProductsByCategory(string $category, int $perPage = 12): LengthAwarePaginator
+    public function getProductsByCategory(int $category, int $perPage = 12): LengthAwarePaginator
     {
         return Product::with(['owner', 'coverImage'])
             ->where('is_active', true)
@@ -125,7 +125,7 @@ class ProductRepository
 
         // カテゴリフィルター
         if (!empty($filters['category'])) {
-            $query->where('category', $filters['category']);
+            $query->where('category', (int)$filters['category']);
         }
 
         // 価格範囲フィルター
@@ -176,11 +176,17 @@ class ProductRepository
      */
     public function getCategories(): array
     {
-        return Product::where('is_active', true)
-            ->distinct()
-            ->pluck('category')
-            ->filter()
-            ->values()
-            ->toArray();
+        $categories = [
+            1 => 'おもちゃ',
+            2 => 'スポーツ',
+            3 => '家具',
+            4 => '書籍',
+            5 => '美容',
+            6 => '衣類',
+            7 => '電子機器',
+            8 => '食品'
+        ];
+
+        return $categories;
     }
 }

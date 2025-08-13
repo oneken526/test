@@ -64,7 +64,7 @@ class ProductController extends Controller
     /**
      * カテゴリ別商品一覧
      */
-    public function category(string $category, Request $request)
+    public function category(int $category, Request $request)
     {
         $products = $this->productService->getProductsByCategory($category, 12);
         $categories = $this->productService->getCategories();

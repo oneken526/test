@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'guard',
     ];
 
     /**
@@ -46,6 +47,13 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * デフォルト値
+     */
+    protected $attributes = [
+        'guard' => 'user',
+    ];
 
     /**
      * Get the user's initials

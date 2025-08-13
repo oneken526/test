@@ -15,8 +15,20 @@ class ImageHelper
             return self::getDefaultImageUrl();
         }
 
+        // thumbnail_pathが'dummy'の場合、カテゴリ別のランダム画像を返す
+        if ($type === 'thumbnail' && $product->thumbnail_path === 'dummy') {
+            $category = $product->product->category ?? 1;
+            return self::getRandomCategoryImage($category);
+        }
+
         if ($type === 'thumbnail' && $product->thumbnail_path) {
             return Storage::url($product->thumbnail_path);
+        }
+
+        // file_pathが'dummy'の場合、カテゴリ別のランダム画像を返す
+        if ($product->file_path === 'dummy') {
+            $category = $product->product->category ?? 1;
+            return self::getRandomCategoryImage($category);
         }
 
         if ($product->file_path) {
@@ -37,15 +49,21 @@ class ImageHelper
 
         // カバー画像がある場合はカバー画像を返す
         if ($product->coverImage) {
-            return self::getProductImageUrl($product->coverImage);
+            return self::getProductImageUrl($product->coverImage, 'original');
         }
 
         // 最初の画像を返す
         if ($product->images && $product->images->count() > 0) {
-            return self::getProductImageUrl($product->images->first());
+            return self::getProductImageUrl($product->images->first(), 'original');
         }
 
-        return self::getDefaultImageUrl();
+        // cover_image_idがnullの場合は指定された画像を返す
+        if ($product->cover_image_id === null) {
+            return asset('images/products/20200501_noimage.jpg');
+        }
+
+        // 画像がない場合はカテゴリ別のランダム画像を返す
+        return self::getRandomCategoryImage($product->category ?? 1);
     }
 
     /**
@@ -67,7 +85,13 @@ class ImageHelper
             return self::getProductImageUrl($product->images->first(), 'thumbnail');
         }
 
-        return self::getDefaultThumbnailUrl();
+        // cover_image_idがnullの場合は指定された画像を返す
+        if ($product->cover_image_id === null) {
+            return asset('images/products/20200501_noimage.jpg');
+        }
+
+        // 画像がない場合はカテゴリ別のランダム画像を返す
+        return self::getRandomCategoryImage($product->category ?? 1);
     }
 
     /**
@@ -161,5 +185,46 @@ class ImageHelper
     public static function validateImageSize($file, int $maxSize = 5242880): bool
     {
         return $file->getSize() <= $maxSize;
+    }
+
+        /**
+     * カテゴリ別のランダム画像を取得
+     */
+    public static function getRandomCategoryImage(int $category): string
+    {
+        $categoryFolders = [
+            1 => 'toys',      // おもちゃ
+            2 => 'sports',    // スポーツ
+            3 => 'furniture', // 家具
+            4 => 'books',     // 書籍
+            5 => 'beauty',    // 美容
+            6 => 'clothing',  // 衣類
+            7 => 'electronics', // 電子機器
+            8 => 'food'       // 食品
+        ];
+
+        $folderName = $categoryFolders[$category] ?? 'toys';
+        $imagePath = public_path("images/products/{$folderName}");
+
+        // フォルダが存在しない場合はデフォルト画像を返す
+        if (!is_dir($imagePath)) {
+            return self::getDefaultImageUrl();
+        }
+
+        // 画像ファイルを取得
+        $imageFiles = glob($imagePath . '/*.{jpg,jpeg,png,gif,webp}', GLOB_BRACE);
+
+        if (empty($imageFiles)) {
+            return self::getDefaultImageUrl();
+        }
+
+        // ランダムに画像を選択
+        $randomImage = $imageFiles[array_rand($imageFiles)];
+
+        // ファイル名のみを取得
+        $fileName = basename($randomImage);
+
+        // 正しいURLパスを生成
+        return asset("images/products/{$folderName}/{$fileName}");
     }
 }

@@ -16,12 +16,12 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('owner_id')->constrained('owners')->onDelete('cascade');
             $table->string('order_number')->unique();
-            $table->enum('status', ['pending', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled', 'completed'])->default('pending');
+            $table->enum('status', ['1', '2', '3', '4', '5', '6', '7'])->default('1')->comment('1:注文確認中, 2:注文確定, 3:処理中, 4:発送済み, 5:配達完了, 6:キャンセル済み, 7:返金済み');
             $table->unsignedInteger('total_amount');
             $table->unsignedInteger('tax_amount')->default(0);
             $table->unsignedInteger('shipping_fee')->default(0);
-            $table->enum('payment_method', ['credit_card', 'bank_transfer', 'cash_on_delivery', 'digital_wallet'])->nullable();
-            $table->enum('payment_status', ['pending', 'processing', 'completed', 'failed', 'refunded'])->default('pending');
+            $table->enum('payment_method', ['1', '2', '3', '4'])->nullable()->comment('1:クレジットカード, 2:銀行振込, 3:代金引換, 4:デジタルウォレット');
+            $table->enum('payment_status', ['1', '2', '3', '4', '5'])->default('1')->comment('1:未決済, 2:処理中, 3:決済完了, 4:決済失敗, 5:返金済み');
             $table->string('shipping_name');
             $table->string('shipping_postal_code');
             $table->text('shipping_address');

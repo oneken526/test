@@ -58,7 +58,10 @@ class ProductController extends Controller
             abort(404, '商品が見つかりません。');
         }
 
-        return view('user.products.show', compact('product'));
+        // 関連商品を取得（同じカテゴリの商品）
+        $relatedProducts = $this->productService->getRelatedProducts($product->id, $product->category, 4);
+
+        return view('user.products.show', compact('product', 'relatedProducts'));
     }
 
     /**

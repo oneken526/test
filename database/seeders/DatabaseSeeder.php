@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             OwnerSeeder::class,
             ProductSeeder::class,
             ProductImageSeeder::class,
+            UpdateProductCoverImagesSeeder::class,
             OrderSeeder::class,
             OrderItemSeeder::class,
         ]);

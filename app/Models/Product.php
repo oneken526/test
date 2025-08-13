@@ -142,6 +142,14 @@ class Product extends Model
     }
 
     /**
+     * 画像URLを取得
+     */
+    public function getImageUrlAttribute(): string
+    {
+        return \App\Helpers\ImageHelper::getProductMainImageUrl($this);
+    }
+
+    /**
      * 在庫状況を文字列で取得
      */
     public function getStockStatusAttribute(): string

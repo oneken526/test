@@ -19,7 +19,7 @@ class ProductRepository
         // 検索フィルター適用
         $this->applyFilters($query, $filters);
 
-        return $query->orderBy('created_at', 'asc')
+        return $query->orderBy('created_at', 'desc')
                     ->paginate($perPage);
     }
 
@@ -169,6 +169,20 @@ class ProductRepository
             'featured' => $query->where('is_featured', true)->count(),
             'out_of_stock' => $query->where('stock_quantity', 0)->count(),
         ];
+    }
+
+    /**
+     * 関連商品を取得
+     */
+    public function getRelatedProducts(int $productId, int $category, int $limit = 4): Collection
+    {
+        return Product::with(['owner', 'coverImage'])
+            ->where('is_active', true)
+            ->where('id', '!=', $productId)
+            ->where('category', $category)
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
     }
 
     /**

@@ -120,8 +120,8 @@ class ProductService
             }
 
             // 価格と画像のフォーマット処理
-            $product->price = PriceHelper::format($product->price);
-            $product->image_url = ImageHelper::getProductMainImageUrl($product);
+            $product->display_price = PriceHelper::format($product->price);
+            $product->main_image_url = ImageHelper::getProductMainImageUrl($product);
             $product->thumbnail_url = ImageHelper::getProductThumbnailUrl($product);
 
             return $product;
@@ -228,6 +228,28 @@ class ProductService
             return $this->productRepository->getProductStats($ownerId);
         } catch (\Exception $e) {
             Log::error('Product stats retrieval failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * 関連商品を取得
+     */
+    public function getRelatedProducts(int $productId, int $category, int $limit = 4): Collection
+    {
+        try {
+            $products = $this->productRepository->getRelatedProducts($productId, $category, $limit);
+
+            // 価格と画像のフォーマット処理
+            $products->transform(function ($product) {
+                $product->formatted_price = PriceHelper::format($product->price);
+                $product->image_url = ImageHelper::getProductThumbnailUrl($product);
+                return $product;
+            });
+
+            return $products;
+        } catch (\Exception $e) {
+            Log::error('Related products retrieval failed: ' . $e->getMessage());
             throw $e;
         }
     }

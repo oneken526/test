@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // カスタムミドルウェアの登録
+        $middleware->alias([
+            'guest.owner' => \App\Http\Middleware\RedirectIfOwnerAuthenticated::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

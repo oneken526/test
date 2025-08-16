@@ -117,4 +117,26 @@ class Owner extends Authenticatable
     {
         return $this->shop_name ?: $this->name;
     }
+
+        /**
+     * イニシャルを取得
+     */
+    public function initials(): string
+    {
+        $name = trim($this->name);
+
+        // 日本語の場合は最初の文字を返す
+        if (preg_match('/[\x{4E00}-\x{9FAF}]/u', $name)) {
+            return mb_substr($name, 0, 1, 'UTF-8');
+        }
+
+        // 英語の場合はスペースで分割してイニシャルを作成
+        $words = explode(' ', $name);
+
+        if (count($words) >= 2) {
+            return strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
+        }
+
+        return strtoupper(substr($name, 0, 1));
+    }
 }

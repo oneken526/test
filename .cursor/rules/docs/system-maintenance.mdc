@@ -1,0 +1,197 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+
+# Cursor Rules for System Maintenance
+
+## システム概要
+既存システムを保守する
+
+## 技術スタック
+- **フレームワーク**: Laravel 11
+- **フロントエンド**: Tailwind CSS + jQuery
+- **データベース**: MariaDB
+<!-- - **認証**: Laravel Multi-Guard Authentication -->
+- **ORM**: Eloquent
+- **ビルドツール**: Vite
+
+## アーキテクチャ原則
+
+## データベース設計
+
+### テーブル設計
+テーブル設計情報は以下を参照：
+- テーブル概要: docs/db/tabel-overview.mdc
+
+## ディレクトリ構成原則
+
+<!-- ### 機能別・ロール別分離
+```
+Controllers/
+├── User/ (購入者機能)
+└── Owner/ (店舗運営機能)
+
+Livewire/
+├── User/ (購入者向けコンポーネント)
+└── Owner/ (店舗運営向けコンポーネント)
+
+views/
+├── user/ (購入者画面)
+├── owner/ (店舗運営画面)
+└── components/shared/ (共通コンポーネント)
+```
+
+### 共通化ファイル配置
+```
+app/Helpers/ - 共通ヘルパー関数
+app/Traits/ - モデル共通機能
+app/Services/ - ビジネスロジック
+resources/css/components/ - 共通CSS
+resources/js/common/ - 共通JavaScript
+resources/views/components/shared/ - 共通Bladeコンポーネント
+``` -->
+
+## コーディング規約
+
+### 命名規約
+- **Controller**: `UserProductController`, `OwnerProductController`
+- **Model**: 単数形 `Product`, `Order`, `ProductImage`
+- **Service**: 機能+Service `CartService`, `OrderService`
+- **Helper**: 機能+Helper `ImageHelper`, `PriceHelper`
+
+### ファイル組織
+- 1つのLivewireコンポーネントは1つの責任のみ
+- Serviceクラスで複雑なビジネスロジックを分離
+- Helperで汎用的な処理を関数化
+- Traitでモデル間の共通機能を提供
+
+## 実装パターン
+
+### 認証・認可
+```php
+// マルチガード使用
+Auth::guard('user')->attempt($credentials)
+Auth::guard('owner')->attempt($credentials)
+
+// ミドルウェアによる制御
+Route::middleware('auth:user')->group(function () {
+    // User専用ルート
+});
+
+Route::middleware('auth:owner')->group(function () {
+    // Owner専用ルート
+});
+```
+
+### Livewireコンポーネント
+```php
+// 状態管理
+public $products = [];
+public $cart = [];
+
+// リアクティブプロパティ
+#[Reactive]
+public $search = '';
+
+// イベントリスナー
+#[On('product-added')]
+public function handleProductAdded($productId) {}
+```
+
+### セッション管理（カート）
+```php
+// CartService経由でセッション操作
+$cartService = new CartService();
+$cartService->add($productId, $quantity);
+$cartService->remove($productId);
+$cartService->getItems();
+```
+
+## UI/UX原則
+
+### Tailwind CSS使用
+- ユーティリティファーストアプローチ
+- レスポンシブデザイン必須
+- ダークモード対応は任意
+
+### コンポーネント設計
+- 小さく、再利用可能な単位で作成
+- propsによる柔軟な設定
+- スロットによる内容カスタマイズ
+
+## セキュリティ要件
+
+### 必須対応
+- CSRF保護（Laravel標準）
+- パスワードハッシュ化（bcrypt/argon2）
+- SQLインジェクション対策（Eloquent使用）
+- XSS対策（Blade自動エスケープ）
+- ファイルアップロード検証
+
+### 認可制御
+```php
+// Policy使用
+$this->authorize('update', $product);
+
+// Gate使用
+Gate::allows('manage-products', $user);
+```
+
+## パフォーマンス考慮
+
+### データベース
+- EloquentリレーションでN+1問題回避
+- インデックス適切設定
+- ページネーション実装必須
+
+### フロントエンド
+- 画像最適化（WebP対応）
+- Lazy Loading実装
+- CSS/JSバンドル最適化
+
+## テスト方針
+
+### テスト種類
+- **Feature Test**: エンドツーエンド機能テスト
+- **Unit Test**: Service、Helperのロジックテスト
+- **Livewire Test**: コンポーネント動作テスト
+
+### テスト対象
+- 認証・認可機能
+- 商品CRUD操作
+- 注文処理フロー
+- カート機能
+
+## 開発フロー
+
+### 機能実装順序
+1. データベース設計・マイグレーション
+2. モデル・リレーション定義
+3. 認証システム（マルチガード）
+4. 基本CRUD（Livewire）
+5. ビジネスロジック（Service）
+6. UI/UX調整（Tailwind）
+7. テスト実装
+
+### コミット規約
+- `feat:` 新機能追加
+- `fix:` バグ修正
+- `refactor:` リファクタリング
+- `style:` コードスタイル修正
+- `test:` テスト追加・修正
+
+## 注意事項
+
+### 避けるべきパターン
+- コントローラーに複雑なビジネスロジック記述
+- JavaScriptでの状態管理（Livewireを使用）
+- 直接的なSQLクエリ（Eloquent使用）
+- インラインCSS（Tailwindクラス使用）
+
+### 推奨パターン
+- サービス層でのビジネスロジック分離
+- Livewireでの状態管理
+- Eloquentリレーションの活用
+- コンポーネント指向の開発

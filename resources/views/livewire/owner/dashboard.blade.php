@@ -11,8 +11,7 @@
                     <p class="mt-1 text-sm text-gray-500">{{ $owner->display_name }}様、お疲れ様です</p>
                 </div>
                 <div class="flex space-x-3">
-                    {{-- <a href="{{ route('owner.products.index') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"> --}}
-                    <a href="" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                    <a href="{{ route('owner.products.index') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
                         商品管理
                     </a>
                     {{-- <a href="{{ route('owner.orders.index') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"> --}}
@@ -206,8 +205,7 @@
                             </ul>
                         </div>
                         <div class="mt-6">
-                            {{-- <a href="{{ route('owner.products.index') }}" class="w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"> --}}
-                            <a href="" class="w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            <a href="{{ route('owner.products.index') }}" class="w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 すべての商品を見る
                             </a>
                         </div>

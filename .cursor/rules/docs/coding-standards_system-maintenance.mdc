@@ -1,0 +1,402 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+
+# Laravel Multi-Auth EC Site - Cursor Rules with Shared Components
+
+## アーキテクチャルール
+
+### 基本フロー
+- 必ず `Controller → Service → Repository → Model` の順で処理を実装する
+- 層をスキップした直接呼び出しは禁止（例：ControllerからRepository、ServiceからModel直接呼び出し）
+<!-- - User/Owner機能は分離し、共通部分はsharedで統一する -->
+
+### ディレクトリ構成ルール
+<!-- ```
+app/
+├── Http/Controllers/
+│   ├── Auth/ (認証関連)
+│   ├── User/ (購入者用)
+│   └── Owner/ (オーナー用)
+├── Services/ (ビジネスロジック)
+├── Repositories/ (データアクセス)
+├── Helpers/ (共通ヘルパー関数)
+├── Traits/ (共通機能)
+└── Livewire/ (User/Owner別コンポーネント)
+``` -->
+
+## 共通化ルール
+
+### 1. PHPヘルパー関数の使用 (`app/Helpers/`)
+
+<!-- #### 必ず使用するヘルパー
+- **ImageHelper**: 画像処理・リサイズ・パス生成
+- **PriceHelper**: 価格フォーマット・税計算
+- **DateHelper**: 日付フォーマット・期間計算
+- **ValidationHelper**: バリデーション共通ルール
+- **StringHelper**: 文字列操作・変換 -->
+
+<!-- ```php
+// 価格表示時は必ずPriceHelperを使用
+echo PriceHelper::format($product->price); // ¥1,000
+
+// 日付表示時は必ずDateHelperを使用
+echo DateHelper::formatJapanese($order->created_at); // 2024年1月1日
+
+// 画像表示時は必ずImageHelperを使用
+echo ImageHelper::getProductImageUrl($product, 'thumbnail');
+``` -->
+
+### 2. Traitによる機能共通化 (`app/Traits/`)
+
+<!-- #### 必ず実装するTrait
+```php
+// 画像を持つモデルには必ずHasImagesを使用
+class Product extends Model
+{
+    use HasImages, HasStatus, Timestampable;
+}
+
+// ステータスを持つモデルには必ずHasStatusを使用
+class Order extends Model
+{
+    use HasStatus, Timestampable;
+}
+``` -->
+
+### 3. CSS共通化ルール (`resources/css/`)
+
+<!-- #### コンポーネントCSSの使用
+```css
+/* resources/css/components/ から必要なものをインポート */
+@import './components/buttons.css';
+@import './components/forms.css';
+@import './components/cards.css';
+@import './components/modals.css';
+@import './components/tables.css';
+``` -->
+
+#### カスタムCSSは禁止、必ずコンポーネントを使用
+```html
+<!-- ❌ 独自スタイル禁止 -->
+<button style="background: blue;">送信</button>
+
+<!-- ✅ 共通コンポーネントを使用 -->
+<button class="btn-primary">送信</button>
+```
+
+### 4. JavaScript共通化ルール (`resources/js/`)
+
+#### 必ず使用する共通関数
+<!-- ```javascript
+// resources/js/common/ の関数を必ず使用
+import { showNotification } from './common/notifications.js';
+import { validateForm } from './common/validation.js';
+import { apiRequest } from './common/api.js';
+
+// API通信時
+const result = await apiRequest('/api/products', 'POST', data);
+
+// 通知表示時
+showNotification('商品を保存しました', 'success');
+``` -->
+
+## Controller層のルール
+
+### User/Owner別実装
+```php
+<?php
+namespace App\Http\Controllers\User;
+
+use App\Services\ProductService;
+use App\Helpers\PriceHelper;
+
+class ProductController extends Controller
+{
+    protected $productService;
+
+    public function __construct(ProductService $productService)
+    {
+        $this->productService = $productService;
+    }
+
+    public function index(Request $request)
+    {
+        $products = $this->productService->getProductList($request->all());
+
+        // 必ずPriceHelperで価格整形
+        $products->transform(function($product) {
+            $product->formatted_price = PriceHelper::format($product->price);
+            return $product;
+        });
+
+        return view('user.products.index', compact('products'));
+    }
+}
+```
+
+## Service層のルール
+
+### 共通ヘルパーの活用
+```php
+<?php
+namespace App\Services;
+
+use App\Repositories\ProductRepository;
+use App\Helpers\{ImageHelper, PriceHelper, ValidationHelper};
+use Illuminate\Support\Facades\DB;
+
+class ProductService
+{
+    protected $productRepository;
+
+    public function __construct(ProductRepository $productRepository)
+    {
+        $this->productRepository = $productRepository;
+    }
+
+    public function createProduct(array $data)
+    {
+        // 必ずValidationHelperでバリデーション
+        ValidationHelper::validateProductData($data);
+
+        try {
+            return DB::transaction(function () use ($data) {
+                // 価格処理は必ずPriceHelper
+                $data['price'] = PriceHelper::sanitize($data['price']);
+
+                $product = $this->productRepository->create($data);
+
+                // 画像処理は必ずImageHelper
+                if (isset($data['images'])) {
+                    ImageHelper::processProductImages($product, $data['images']);
+                }
+
+                return $product;
+            });
+        } catch (\Exception $e) {
+            Log::error('Product creation failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+}
+```
+
+## Livewireコンポーネントルール
+
+### 共通機能の継承
+```php
+<?php
+namespace App\Livewire\User;
+
+use Livewire\Component;
+use App\Traits\LivewireHelpers;
+use App\Helpers\{PriceHelper, DateHelper};
+
+class ProductList extends Component
+{
+    use LivewireHelpers;
+
+    public function render()
+    {
+        $products = $this->getProducts();
+
+        // 必ず共通ヘルパーでフォーマット
+        $products->transform(function($product) {
+            $product->formatted_price = PriceHelper::format($product->price);
+            $product->formatted_date = DateHelper::formatJapanese($product->created_at);
+            return $product;
+        });
+
+        return view('livewire.user.product-list', compact('products'));
+    }
+}
+```
+
+## Bladeテンプレートルール
+
+### 共通コンポーネントの使用
+```blade
+{{-- 必ず共通レイアウトを使用 --}}
+@extends('layouts.user')
+
+{{-- 必ず共通コンポーネントを使用 --}}
+<x-shared.header />
+
+<div class="container">
+    {{-- 必ずshared/form配下のコンポーネントを使用 --}}
+    <x-shared.form.input
+        name="name"
+        label="商品名"
+        :value="old('name')"
+        required
+    />
+
+    <x-shared.form.button
+        type="submit"
+        class="btn-primary"
+    >
+        保存
+    </x-shared.form.button>
+</div>
+
+<x-shared.footer />
+```
+
+### 価格・日付表示ルール
+```blade
+{{-- ❌ 直接表示禁止 --}}
+{{ $product->price }}
+{{ $order->created_at }}
+
+{{-- ✅ 必ずヘルパー使用 --}}
+{{ PriceHelper::format($product->price) }}
+{{ DateHelper::formatJapanese($order->created_at) }}
+```
+
+## フロントエンドルール
+
+### JavaScript共通関数の使用
+```javascript
+// 必ずcommon配下の関数を使用
+import {
+    showNotification,
+    validateForm,
+    apiRequest,
+    formatPrice,
+    formatDate
+} from '../common/utils.js';
+
+// フォーム送信処理
+document.getElementById('product-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // 必ず共通バリデーション使用
+    if (!validateForm(e.target)) {
+        return;
+    }
+
+    try {
+        // 必ず共通API関数使用
+        const result = await apiRequest('/api/products', 'POST',
+            new FormData(e.target)
+        );
+
+        // 必ず共通通知関数使用
+        showNotification('商品を保存しました', 'success');
+
+    } catch (error) {
+        showNotification('エラーが発生しました', 'error');
+    }
+});
+```
+
+### CSS共通クラスの使用
+```html
+<!-- 必ず定義済みのCSSクラスを使用 -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">商品情報</h3>
+    </div>
+    <div class="card-body">
+        <button class="btn btn-primary btn-loading" type="submit">
+            保存
+        </button>
+        <button class="btn btn-secondary" type="button">
+            キャンセル
+        </button>
+    </div>
+</div>
+```
+
+## 認証・認可ルール
+
+### マルチガード対応
+```php
+// 必ずガード別にミドルウェア適用
+Route::group(['middleware' => 'auth:user', 'prefix' => 'user'], function() {
+    // User routes
+});
+
+Route::group(['middleware' => 'auth:owner', 'prefix' => 'owner'], function() {
+    // Owner routes
+});
+```
+
+## ファイル保存ルール
+
+### 画像保存時の共通処理
+```php
+// 必ずImageHelperを使用
+class ProductImageService
+{
+    public function store($image, $productId)
+    {
+        // 共通画像処理を使用
+        $path = ImageHelper::storeProductImage($image, $productId);
+        $thumbnailPath = ImageHelper::createThumbnail($path);
+
+        return [
+            'original' => $path,
+            'thumbnail' => $thumbnailPath
+        ];
+    }
+}
+```
+
+## テストルール
+
+### 共通テストヘルパーの使用
+```php
+<?php
+namespace Tests\Feature\User;
+
+use Tests\TestCase;
+use Tests\Helpers\{UserTestHelper, ProductTestHelper};
+
+class ProductTest extends TestCase
+{
+    use UserTestHelper, ProductTestHelper;
+
+    public function test_user_can_view_products()
+    {
+        // 必ず共通テストヘルパー使用
+        $user = $this->createTestUser();
+        $products = $this->createTestProducts(5);
+
+        $response = $this->actingAs($user, 'user')
+                         ->get('/user/products');
+
+        $response->assertStatus(200);
+    }
+}
+```
+
+## 共通化チェックリスト
+
+### 新機能実装時の確認事項
+- [ ] 既存のHelperクラスで対応可能か確認
+- [ ] 適切なTraitを使用しているか
+- [ ] 共通CSSコンポーネントを使用しているか
+- [ ] 共通JavaScriptライブラリを使用しているか
+- [ ] 共通Bladeコンポーネントを使用しているか
+- [ ] 価格表示時にPriceHelperを使用しているか
+- [ ] 日付表示時にDateHelperを使用しているか
+- [ ] 画像処理時にImageHelperを使用しているか
+
+### 新しい共通機能が必要な場合
+1. 同様の処理が3箇所以上で使用される場合は共通化を検討
+2. Helper/Trait/Service いずれかに切り出し
+3. 既存コードも同時にリファクタリング
+4. テストコードも併せて作成
+
+## パフォーマンス考慮事項
+
+### 共通化による最適化
+- CSS/JSは必要な部分のみロード（vite設定活用）
+- 共通画像はCDN配信を想定した設計
+- キャッシュ戦略は共通ヘルパーで統一
+
+これらのルールに従って、保守性・再利用性・統一性の高いマルチログイン対応ECサイトを開発してください。共通化により開発効率と品質の向上を図ります。

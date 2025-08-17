@@ -81,7 +81,8 @@ class ProductController extends Controller
 
         try {
             $product = $this->productService->getProduct($owner, $id);
-            return view('owner.products.show', compact('product'));
+            $categories = $this->getCategories();
+            return view('owner.products.show', compact('product', 'categories'));
         } catch (\Exception $e) {
             abort(404, '商品が見つかりません。');
         }
@@ -200,7 +201,7 @@ class ProductController extends Controller
             'description' => 'nullable|string|max:1000',
             'price' => 'required|integer|min:0',
             'stock_quantity' => 'required|integer|min:0',
-            'category' => 'required|string|max:100',
+            'category' => 'required|integer|in:1,2,3,4,5,6,7,8',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'weight' => 'nullable|numeric|min:0',
@@ -225,14 +226,14 @@ class ProductController extends Controller
     {
         // 実際のプロジェクトでは、カテゴリテーブルから取得
         return [
-            'electronics' => '電子機器',
-            'clothing' => '衣類',
-            'books' => '書籍',
-            'food' => '食品',
-            'furniture' => '家具',
-            'sports' => 'スポーツ用品',
-            'beauty' => '美容・健康',
-            'toys' => 'おもちゃ',
+            '1' => '電子機器',
+            '2' => '衣類',
+            '3' => '書籍',
+            '4' => '食品',
+            '5' => '家具',
+            '6' => 'スポーツ用品',
+            '7' => '美容・健康',
+            '8' => 'おもちゃ',
         ];
     }
 }

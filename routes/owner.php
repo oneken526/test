@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
 // Owner routes
 Route::prefix('owner')->name('owner.')->group(function () {
@@ -20,6 +21,26 @@ Route::prefix('owner')->name('owner.')->group(function () {
 
         // 商品管理
         Route::resource('products', \App\Http\Controllers\Owner\ProductController::class);
+
+// 商品画像削除用のルート
+Route::delete('product-images/{id}', function($id) {
+    try {
+        $image = \App\Models\ProductImage::findOrFail($id);
+
+        // 認証されたオーナーの商品かチェック
+        $ownerId = Auth::guard('owner')->id();
+        if ($image->product->owner_id !== $ownerId) {
+            return response()->json(['success' => false, 'message' => '権限がありません'], 403);
+        }
+
+        // 画像を削除
+        $image->delete();
+
+        return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+})->name('owner.product-images.destroy');
 
         // 注文管理（将来的に追加予定）
         // Route::get('/orders', \App\Livewire\Owner\Orders\Index::class)->name('orders.index');

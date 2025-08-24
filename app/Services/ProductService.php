@@ -183,6 +183,22 @@ class ProductService
     public function deleteProduct(int $id): bool
     {
         try {
+            // 商品に関連する画像を削除
+            $product = $this->productRepository->findById($id);
+            if ($product) {
+                // カバー画像を削除
+                if ($product->cover_image_id) {
+                    $this->productRepository->deleteImage($product->cover_image_id);
+                }
+
+                // 商品画像を削除
+                if ($product->images) {
+                    foreach ($product->images as $image) {
+                        $this->productRepository->deleteImage($image->id);
+                    }
+                }
+            }
+
             $result = $this->productRepository->delete($id);
 
             if ($result) {
@@ -388,4 +404,6 @@ class ProductService
             throw $e;
         }
     }
+
+
 }

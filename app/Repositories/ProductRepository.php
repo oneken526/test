@@ -229,4 +229,28 @@ class ProductRepository
             ->where('owner_id', $ownerId)
             ->first();
     }
+
+    /**
+     * 商品画像を作成
+     */
+    public function createImage(array $data)
+    {
+        return \App\Models\ProductImage::create($data);
+    }
+
+    /**
+     * 商品画像を削除
+     */
+    public function deleteImage(int $imageId): bool
+    {
+        $image = \App\Models\ProductImage::find($imageId);
+        if ($image) {
+            // ファイルを削除
+            if (\Illuminate\Support\Facades\Storage::exists('public/' . $image->path)) {
+                \Illuminate\Support\Facades\Storage::delete('public/' . $image->path);
+            }
+            return $image->delete();
+        }
+        return false;
+    }
 }

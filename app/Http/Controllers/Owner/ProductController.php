@@ -70,4 +70,59 @@ class ProductController extends Controller
 
         return view('owner.products.show', compact('product'));
     }
+
+    /**
+     * 商品登録画面を表示
+     */
+    public function create()
+    {
+        $categories = $this->productService->getCategories();
+        return view('owner.products.create', compact('categories'));
+    }
+
+    /**
+     * 商品を登録
+     */
+    public function store(Request $request)
+    {
+        // バリデーション
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string|max:1000',
+            'price' => 'required|numeric|min:0',
+            'stock_quantity' => 'required|integer|min:0',
+            'category' => 'required|integer|min:1|max:8',
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean',
+            'weight' => 'nullable|numeric|min:0',
+            'dimensions' => 'nullable|string|max:255',
+            'sku' => 'nullable|string|max:100|unique:products,sku',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        // 認証されたオーナーのIDを追加
+        $validatedData['owner_id'] = Auth::guard('owner')->id();
+
+        try {
+            // 商品を作成
+            $product = $this->productService->createProduct($validatedData);
+
+            // 画像アップロード処理
+            if ($request->hasFile('cover_image')) {
+                $this->productService->uploadCoverImage($product->id, $request->file('cover_image'));
+            }
+
+            if ($request->hasFile('images')) {
+                $this->productService->uploadProductImages($product->id, $request->file('images'));
+            }
+
+            return redirect()->route('owner.products.index')
+                ->with('success', '商品が正常に登録されました。');
+
+        } catch (\Exception $e) {
+            return back()->withInput()
+                ->withErrors(['error' => '商品の登録に失敗しました: ' . $e->getMessage()]);
+        }
+    }
 }

@@ -21,12 +21,14 @@ class ProductImage extends Model
         'product_id',
         'file_name',
         'file_path',
+        'path',
         'file_size',
         'mime_type',
         'alt_text',
         'sort_order',
         'thumbnail_path',
         'is_primary',
+        'is_cover',
     ];
 
     /**

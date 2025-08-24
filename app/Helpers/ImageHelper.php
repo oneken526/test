@@ -227,4 +227,25 @@ class ImageHelper
         // 正しいURLパスを生成
         return asset("images/products/{$folderName}/{$fileName}");
     }
+
+    /**
+     * 商品画像をアップロード
+     */
+    public static function uploadProductImage($file, string $directory = 'products'): string
+    {
+        if (!$file || !$file->isValid()) {
+            throw new \InvalidArgumentException('Invalid file uploaded');
+        }
+
+        // ファイル名を生成
+        $filename = self::generateImageFilename($file->getClientOriginalName());
+
+        // パスを生成
+        $path = self::generateImagePath($directory, $filename);
+
+        // ファイルを保存
+        $file->storeAs('public/' . $directory, $filename);
+
+        return $path;
+    }
 }

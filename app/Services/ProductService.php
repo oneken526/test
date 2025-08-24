@@ -276,13 +276,90 @@ class ProductService
             $product = $this->productRepository->findByIdAndOwner($id, $ownerId);
 
             if ($product) {
-                $product->formatted_price = PriceHelper::format($product->price);
-                $product->image_url = ImageHelper::getProductThumbnailUrl($product);
+                $product->setAttribute('formatted_price', PriceHelper::format($product->price));
+                $product->setAttribute('image_url', ImageHelper::getProductThumbnailUrl($product));
             }
 
             return $product;
         } catch (\Exception $e) {
             Log::error('Owner product detail retrieval failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * カバー画像をアップロード
+     */
+    public function uploadCoverImage(int $productId, $file)
+    {
+        try {
+            $imagePath = ImageHelper::uploadProductImage($file, 'products');
+
+            // 既存のカバー画像を削除
+            $product = $this->productRepository->findById($productId);
+            if ($product && $product->cover_image_id) {
+                $this->productRepository->deleteImage($product->cover_image_id);
+            }
+
+            // 新しいカバー画像を保存
+            $imageData = [
+                'product_id' => $productId,
+                'file_path' => $imagePath,
+                'path' => $imagePath,
+                'file_name' => basename($imagePath),
+                'file_size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'is_primary' => true,
+                'is_cover' => true,
+                'sort_order' => 0
+            ];
+
+            $image = $this->productRepository->createImage($imageData);
+
+            // 商品のカバー画像IDを更新
+            $this->productRepository->update($productId, ['cover_image_id' => $image->id]);
+
+            Log::info('Cover image uploaded successfully for product: ' . $productId);
+
+            return $image;
+        } catch (\Exception $e) {
+            Log::error('Cover image upload failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * 商品画像をアップロード
+     */
+    public function uploadProductImages(int $productId, array $files)
+    {
+        try {
+            $uploadedImages = [];
+
+            foreach ($files as $index => $file) {
+                $imagePath = ImageHelper::uploadProductImage($file, 'products');
+
+                $imageData = [
+                    'product_id' => $productId,
+                    'file_path' => $imagePath,
+                    'path' => $imagePath,
+                    'file_name' => basename($imagePath),
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'is_primary' => false,
+                    'is_cover' => false,
+                    'sort_order' => $index + 1
+                ];
+
+                $image = $this->productRepository->createImage($imageData);
+                $uploadedImages[] = $image;
+            }
+
+            Log::info('Product images uploaded successfully for product: ' . $productId);
+
+            return $uploadedImages;
+        } catch (\Exception $e) {
+            Log::error('Product images upload failed: ' . $e->getMessage());
             throw $e;
         }
     }

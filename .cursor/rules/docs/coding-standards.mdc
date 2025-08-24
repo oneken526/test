@@ -4,968 +4,292 @@ globs:
 alwaysApply: false
 ---
 
-# Laravel Multi-Auth EC Site - Cursor Rules with Shared Components
+# Laravel Service & Repository Pattern - Cursor Rules
 
 ## アーキテクチャルール
 
 ### 基本フロー
 - 必ず `Controller → Service → Repository → Model` の順で処理を実装する
 - 層をスキップした直接呼び出しは禁止（例：ControllerからRepository、ServiceからModel直接呼び出し）
-- User/Owner機能は分離し、共通部分はsharedで統一する
 
-### ディレクトリ構成ルール
+### ディレクトリ構成
 ```
 app/
 ├── Http/Controllers/
-│   ├── Auth/ (認証関連)
-│   ├── User/ (購入者用)
-│   └── Owner/ (オーナー用)
-├── Services/ (ビジネスロジック)
-├── Repositories/ (データアクセス)
-├── Helpers/ (共通ヘルパー関数)
-├── Traits/ (共通機能)
-├── Enums/ (定数・区分管理)
-├── Constants/ (定数定義)
-└── Livewire/ (User/Owner別コンポーネント)
-```
-
-## 定数・区分管理ルール
-
-### 1. Enumによる区分管理 (`app/Enums/`)
-
-#### 必ず実装するEnum
-```php
-<?php
-namespace App\Enums;
-
-enum OrderStatus: string
-{
-    case PENDING = 'pending';
-    case CONFIRMED = 'confirmed';
-    case SHIPPED = 'shipped';
-    case DELIVERED = 'delivered';
-    case CANCELLED = 'cancelled';
-
-    public function label(): string
-    {
-        return match($this) {
-            self::PENDING => '注文確認中',
-            self::CONFIRMED => '注文確定',
-            self::SHIPPED => '発送済み',
-            self::DELIVERED => '配送完了',
-            self::CANCELLED => 'キャンセル',
-        };
-    }
-
-    public function color(): string
-    {
-        return match($this) {
-            self::PENDING => 'warning',
-            self::CONFIRMED => 'info',
-            self::SHIPPED => 'primary',
-            self::DELIVERED => 'success',
-            self::CANCELLED => 'danger',
-        };
-    }
-
-    public static function getSelectOptions(): array
-    {
-        return collect(self::cases())
-            ->mapWithKeys(fn($status) => [$status->value => $status->label()])
-            ->toArray();
-    }
-}
-
-enum ProductStatus: string
-{
-    case DRAFT = 'draft';
-    case ACTIVE = 'active';
-    case INACTIVE = 'inactive';
-    case OUT_OF_STOCK = 'out_of_stock';
-
-    public function label(): string
-    {
-        return match($this) {
-            self::DRAFT => '下書き',
-            self::ACTIVE => '販売中',
-            self::INACTIVE => '販売停止',
-            self::OUT_OF_STOCK => '在庫切れ',
-        };
-    }
-
-    public function isAvailableForPurchase(): bool
-    {
-        return $this === self::ACTIVE;
-    }
-}
-
-enum UserType: string
-{
-    case USER = 'user';
-    case OWNER = 'owner';
-    case ADMIN = 'admin';
-
-    public function getGuard(): string
-    {
-        return match($this) {
-            self::USER => 'user',
-            self::OWNER => 'owner',
-            self::ADMIN => 'admin',
-        };
-    }
-
-    public function getHomeRoute(): string
-    {
-        return match($this) {
-            self::USER => 'user.dashboard',
-            self::OWNER => 'owner.dashboard',
-            self::ADMIN => 'admin.dashboard',
-        };
-    }
-}
-
-enum PaymentMethod: string
-{
-    case CREDIT_CARD = 'credit_card';
-    case BANK_TRANSFER = 'bank_transfer';
-    case COD = 'cod'; // Cash on Delivery
-    case DIGITAL_WALLET = 'digital_wallet';
-
-    public function label(): string
-    {
-        return match($this) {
-            self::CREDIT_CARD => 'クレジットカード',
-            self::BANK_TRANSFER => '銀行振込',
-            self::COD => '代金引換',
-            self::DIGITAL_WALLET => 'デジタルウォレット',
-        };
-    }
-
-    public function fee(): int
-    {
-        return match($this) {
-            self::CREDIT_CARD => 0,
-            self::BANK_TRANSFER => 330,
-            self::COD => 440,
-            self::DIGITAL_WALLET => 0,
-        };
-    }
-}
-```
-
-### 2. 定数ファイル管理 (`app/Constants/`)
-
-#### システム設定定数
-```php
-<?php
-namespace App\Constants;
-
-class SystemConsts
-{
-    // ページネーション
-    public const DEFAULT_PER_PAGE = 20;
-    public const MAX_PER_PAGE = 100;
-    public const ADMIN_PER_PAGE = 50;
-
-    // ファイルサイズ制限（バイト）
-    public const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-    public const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB
-
-    // 画像サイズ
-    public const THUMBNAIL_WIDTH = 200;
-    public const THUMBNAIL_HEIGHT = 200;
-    public const MEDIUM_IMAGE_WIDTH = 600;
-    public const MEDIUM_IMAGE_HEIGHT = 600;
-    public const LARGE_IMAGE_WIDTH = 1200;
-    public const LARGE_IMAGE_HEIGHT = 1200;
-
-    // キャッシュ有効期間（秒）
-    public const CACHE_SHORT = 300; // 5分
-    public const CACHE_MEDIUM = 3600; // 1時間
-    public const CACHE_LONG = 86400; // 24時間
-    public const CACHE_VERY_LONG = 604800; // 7日
-
-    // セッション有効期間
-    public const SESSION_LIFETIME = 120; // 分
-
-    // API制限
-    public const API_RATE_LIMIT = 60; // 1分間のリクエスト数
-    public const API_RATE_LIMIT_PREMIUM = 300; // プレミアムユーザー
-
-    // 検索関連
-    public const SEARCH_MIN_LENGTH = 2;
-    public const SEARCH_MAX_RESULTS = 1000;
-
-    // バックアップ保持期間
-    public const BACKUP_RETENTION_DAYS = 30;
-}
-
-class ProductConsts
-{
-    // 商品コード
-    public const PRODUCT_CODE_LENGTH = 8;
-    public const PRODUCT_CODE_PREFIX = 'PRD';
-
-    // 在庫管理
-    public const LOW_STOCK_THRESHOLD = 10;
-    public const OUT_OF_STOCK_THRESHOLD = 0;
-
-    // 価格
-    public const MIN_PRICE = 1;
-    public const MAX_PRICE = 9999999;
-
-    // 商品画像
-    public const MAX_IMAGES_PER_PRODUCT = 10;
-    public const MAIN_IMAGE_INDEX = 0;
-
-    // カテゴリ
-    public const MAX_CATEGORY_DEPTH = 3;
-    public const MAX_CATEGORIES_PER_PRODUCT = 5;
-
-    // レビュー
-    public const MIN_REVIEW_RATING = 1;
-    public const MAX_REVIEW_RATING = 5;
-    public const REVIEW_COMMENT_MAX_LENGTH = 1000;
-}
-
-class OrderConsts
-{
-    // 注文番号
-    public const ORDER_NUMBER_LENGTH = 12;
-    public const ORDER_NUMBER_PREFIX = 'ORD';
-
-    // 配送
-    public const FREE_SHIPPING_THRESHOLD = 5000;
-    public const DEFAULT_SHIPPING_FEE = 800;
-    public const EXPRESS_SHIPPING_FEE = 1200;
-
-    // 返品・交換
-    public const RETURN_PERIOD_DAYS = 14;
-    public const EXCHANGE_PERIOD_DAYS = 30;
-
-    // キャンセル
-    public const CANCEL_LIMIT_HOURS = 24;
-
-    // 決済
-    public const PAYMENT_TIMEOUT_MINUTES = 30;
-    public const REFUND_PROCESS_DAYS = 7;
-}
-
-class NotificationConsts
-{
-    // 通知種別
-    public const TYPE_ORDER_CONFIRMED = 'order_confirmed';
-    public const TYPE_ORDER_SHIPPED = 'order_shipped';
-    public const TYPE_ORDER_DELIVERED = 'order_delivered';
-    public const TYPE_PAYMENT_FAILED = 'payment_failed';
-    public const TYPE_LOW_STOCK = 'low_stock';
-
-    // 通知チャンネル
-    public const CHANNEL_EMAIL = 'email';
-    public const CHANNEL_SMS = 'sms';
-    public const CHANNEL_PUSH = 'push';
-    public const CHANNEL_DATABASE = 'database';
-
-    // 通知優先度
-    public const PRIORITY_LOW = 1;
-    public const PRIORITY_NORMAL = 2;
-    public const PRIORITY_HIGH = 3;
-    public const PRIORITY_URGENT = 4;
-}
-
-class ValidationConsts
-{
-    // 文字列長制限
-    public const NAME_MIN_LENGTH = 2;
-    public const NAME_MAX_LENGTH = 100;
-    public const EMAIL_MAX_LENGTH = 255;
-    public const PASSWORD_MIN_LENGTH = 8;
-    public const DESCRIPTION_MAX_LENGTH = 2000;
-
-    // 電話番号パターン
-    public const PHONE_PATTERN = '/^0\d{9,10}$/';
-    public const MOBILE_PHONE_PATTERN = '/^0[789]0-\d{4}-\d{4}$/';
-
-    // 郵便番号パターン
-    public const POSTAL_CODE_PATTERN = '/^\d{3}-\d{4}$/';
-
-    // ファイル形式
-    public const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-    public const ALLOWED_DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
-}
-```
-
-### 3. Enumの使用ルール
-
-#### Model内での使用
-```php
-<?php
-namespace App\Models;
-
-use App\Enums\{OrderStatus, PaymentMethod};
-use App\Constants\OrderConsts;
-use Illuminate\Database\Eloquent\Model;
-
-class Order extends Model
-{
-    protected $fillable = [
-        'order_number',
-        'status',
-        'payment_method',
-        'total_amount',
-        'shipping_fee'
-    ];
-
-    protected $casts = [
-        'status' => OrderStatus::class,
-        'payment_method' => PaymentMethod::class,
-        'total_amount' => 'integer',
-        'shipping_fee' => 'integer',
-    ];
-
-    public function canBeCancelled(): bool
-    {
-        return $this->status === OrderStatus::PENDING &&
-               $this->created_at->diffInHours(now()) <= OrderConsts::CANCEL_LIMIT_HOURS;
-    }
-
-    public function getStatusLabelAttribute(): string
-    {
-        return $this->status->label();
-    }
-
-    public function getStatusColorAttribute(): string
-    {
-        return $this->status->color();
-    }
-}
-```
-
-#### Service層での使用
-```php
-<?php
-namespace App\Services;
-
-use App\Enums\{OrderStatus, PaymentMethod};
-use App\Constants\{OrderConsts, NotificationConsts};
-use App\Repositories\OrderRepository;
-
-class OrderService
-{
-    protected $orderRepository;
-
-    public function __construct(OrderRepository $orderRepository)
-    {
-        $this->orderRepository = $orderRepository;
-    }
-
-    public function createOrder(array $data): Order
-    {
-        // Enumで支払い方法を検証
-        $paymentMethod = PaymentMethod::from($data['payment_method']);
-
-        $orderData = [
-            'order_number' => $this->generateOrderNumber(),
-            'status' => OrderStatus::PENDING,
-            'payment_method' => $paymentMethod,
-            'total_amount' => $data['total_amount'],
-            'shipping_fee' => $this->calculateShippingFee($data['total_amount']),
-        ];
-
-        return $this->orderRepository->create($orderData);
-    }
-
-    protected function calculateShippingFee(int $totalAmount): int
-    {
-        return $totalAmount >= OrderConsts::FREE_SHIPPING_THRESHOLD
-            ? 0
-            : OrderConsts::DEFAULT_SHIPPING_FEE;
-    }
-
-    protected function generateOrderNumber(): string
-    {
-        return OrderConsts::ORDER_NUMBER_PREFIX .
-               str_pad(random_int(1, 999999999), OrderConsts::ORDER_NUMBER_LENGTH - 3, '0', STR_PAD_LEFT);
-    }
-}
-```
-
-#### Controller層での使用
-```php
-<?php
-namespace App\Http\Controllers\User;
-
-use App\Enums\OrderStatus;
-use App\Constants\SystemConsts;
-use App\Services\OrderService;
-
-class OrderController extends Controller
-{
-    protected $orderService;
-
-    public function __construct(OrderService $orderService)
-    {
-        $this->orderService = $orderService;
-    }
-
-    public function index(Request $request)
-    {
-        $perPage = $request->get('per_page', SystemConsts::DEFAULT_PER_PAGE);
-        $status = $request->get('status');
-
-        // Enumで絞り込み
-        $statusFilter = $status ? OrderStatus::from($status) : null;
-
-        $orders = $this->orderService->getUserOrders(
-            auth('user')->id(),
-            $statusFilter,
-            $perPage
-        );
-
-        return view('user.orders.index', [
-            'orders' => $orders,
-            'statusOptions' => OrderStatus::getSelectOptions(),
-        ]);
-    }
-}
-```
-
-### 4. Bladeでの定数使用
-
-```blade
-{{-- resources/views/user/orders/index.blade.php --}}
-@php
-use App\Enums\OrderStatus;
-use App\Constants\OrderConsts;
-@endphp
-
-@extends('layouts.user')
-
-@section('content')
-<div class="container">
-    <h2>注文履歴</h2>
-
-    {{-- ステータス絞り込み --}}
-    <div class="mb-4">
-        <select name="status" class="form-control">
-            <option value="">すべて</option>
-            @foreach(OrderStatus::getSelectOptions() as $value => $label)
-                <option value="{{ $value }}" {{ request('status') === $value ? 'selected' : '' }}>
-                    {{ $label }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-
-    @foreach($orders as $order)
-        <div class="order-card mb-3">
-            <div class="order-header">
-                <span class="order-number">{{ $order->order_number }}</span>
-                <span class="badge badge-{{ $order->status_color }}">
-                    {{ $order->status_label }}
-                </span>
-            </div>
-
-            <div class="order-body">
-                <p>合計金額: {{ PriceHelper::format($order->total_amount) }}</p>
-                <p>配送料: {{ PriceHelper::format($order->shipping_fee) }}</p>
-
-                @if($order->canBeCancelled())
-                    <p class="text-info">
-                        注文後{{ OrderConsts::CANCEL_LIMIT_HOURS }}時間以内はキャンセル可能です
-                    </p>
-                    <button class="btn btn-danger btn-sm" onclick="cancelOrder({{ $order->id }})">
-                        キャンセル
-                    </button>
-                @endif
-            </div>
-        </div>
-    @endforeach
-</div>
-@endsection
-```
-
-### 5. バリデーションでの定数使用
-
-```php
-<?php
-namespace App\Http\Requests;
-
-use App\Constants\ValidationConsts;
-use App\Enums\PaymentMethod;
-use Illuminate\Foundation\Http\FormRequest;
-
-class OrderRequest extends FormRequest
-{
-    public function rules(): array
-    {
-        return [
-            'payment_method' => [
-                'required',
-                'in:' . implode(',', array_column(PaymentMethod::cases(), 'value'))
-            ],
-            'shipping_address.name' => [
-                'required',
-                'string',
-                'min:' . ValidationConsts::NAME_MIN_LENGTH,
-                'max:' . ValidationConsts::NAME_MAX_LENGTH,
-            ],
-            'shipping_address.phone' => [
-                'required',
-                'regex:' . ValidationConsts::PHONE_PATTERN,
-            ],
-            'shipping_address.postal_code' => [
-                'required',
-                'regex:' . ValidationConsts::POSTAL_CODE_PATTERN,
-            ],
-        ];
-    }
-
-    public function messages(): array
-    {
-        return [
-            'payment_method.in' => '有効な支払い方法を選択してください。',
-            'shipping_address.name.min' => '名前は' . ValidationConsts::NAME_MIN_LENGTH . '文字以上で入力してください。',
-            'shipping_address.phone.regex' => '電話番号の形式が正しくありません。',
-        ];
-    }
-}
-```
-
-## 共通化ルール
-
-### 1. PHPヘルパー関数の使用 (`app/Helpers/`)
-
-#### 必ず使用するヘルパー
-- **ImageHelper**: 画像処理・リサイズ・パス生成
-- **PriceHelper**: 価格フォーマット・税計算
-- **DateHelper**: 日付フォーマット・期間計算
-- **ValidationHelper**: バリデーション共通ルール
-- **StringHelper**: 文字列操作・変換
-- **ConstHelper**: 定数値の取得・変換
-
-```php
-echo PriceHelper::format($product->price); // ¥1,000
-
-// 日付表示時は必ずDateHelperを使用
-echo DateHelper::formatJapanese($order->created_at); // 2024年1月1日
-
-// 画像表示時は必ずImageHelperを使用
-echo ImageHelper::getProductImageUrl($product, 'thumbnail');
-
-// 定数値の取得はConstHelperを使用
-echo ConstHelper::getSystemConfig('DEFAULT_PER_PAGE');
-```
-
-### 2. Traitによる機能共通化 (`app/Traits/`)
-
-#### 必ず実装するTrait
-```php
-// 画像を持つモデルには必ずHasImagesを使用
-class Product extends Model
-{
-    use HasImages, HasStatus, Timestampable;
-}
-
-// ステータスを持つモデルには必ずHasStatusを使用
-class Order extends Model
-{
-    use HasStatus, Timestampable;
-}
-```
-
-### 3. CSS共通化ルール (`resources/css/`)
-
-#### コンポーネントCSSの使用
-```css
-/* resources/css/components/ から必要なものをインポート */
-@import './components/buttons.css';
-@import './components/forms.css';
-@import './components/cards.css';
-@import './components/modals.css';
-@import './components/tables.css';
-@import './components/badges.css'; /* ステータス表示用 */
-```
-
-#### カスタムCSSは禁止、必ずコンポーネントを使用
-```html
-<!-- ❌ 独自スタイル禁止 -->
-<button style="background: blue;">送信</button>
-
-<!-- ✅ 共通コンポーネントを使用 -->
-<button class="btn-primary">送信</button>
-```
-
-### 4. JavaScript共通化ルール (`resources/js/`)
-
-#### 必ず使用する共通関数
-```javascript
-// resources/js/common/ の関数を必ず使用
-import { showNotification } from './common/notifications.js';
-import { validateForm } from './common/validation.js';
-import { apiRequest } from './common/api.js';
-import { SYSTEM_CONSTS } from './common/constants.js';
-
-// API通信時
-const result = await apiRequest('/api/products', 'POST', data);
-
-// 通知表示時
-showNotification('商品を保存しました', 'success');
-
-// 定数使用時
-const perPage = SYSTEM_CONSTS.DEFAULT_PER_PAGE;
+├── Services/
+├── Repositories/
+│   └── Interfaces/
+└── Models/
 ```
 
 ## Controller層のルール
 
-### User/Owner別実装
+### 責務
+- リクエストの受け取りとレスポンスの返却のみに専念
+- ビジネスロジックは一切記述しない（Fat Controllerの回避）
+- バリデーションはFormRequestクラスまたはController内で実装
+
+### コード規約
 ```php
 <?php
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers;
 
-use App\Services\ProductService;
-use App\Helpers\PriceHelper;
-use App\Constants\SystemConsts;
-use App\Enums\ProductStatus;
+use App\Services\{ServiceName};
+use Illuminate\Http\Request;
 
-class ProductController extends Controller
+class {ModelName}Controller extends Controller
 {
-    protected $productService;
+    protected ${serviceName};
 
-    public function __construct(ProductService $productService)
+    public function __construct({ServiceName} ${serviceName})
     {
-        $this->productService = $productService;
+        $this->{serviceName} = ${serviceName};
     }
 
-    public function index(Request $request)
+    public function {methodName}(Request $request)
     {
-        $perPage = min(
-            $request->get('per_page', SystemConsts::DEFAULT_PER_PAGE),
-            SystemConsts::MAX_PER_PAGE
-        );
+        // バリデーション
+        $validatedData = $request->validate([
+            // バリデーションルール
+        ]);
 
-        $products = $this->productService->getProductList(
-            $request->all(),
-            ProductStatus::ACTIVE,
-            $perPage
-        );
+        // Serviceメソッド呼び出し
+        $result = $this->{serviceName}->{methodName}($validatedData);
 
-        // 必ずPriceHelperで価格整形
-        $products->transform(function($product) {
-            $product->formatted_price = PriceHelper::format($product->price);
-            return $product;
-        });
-
-        return view('user.products.index', compact('products'));
+        return response()->json($result);
     }
 }
 ```
 
 ## Service層のルール
 
-### 共通ヘルパーの活用
+### 責務
+- ビジネスロジックの実装
+- データの整形・加工
+- バリデーション処理
+- 外部API連携
+- トランザクション処理
+- 例外処理
+
+### コード規約
 ```php
 <?php
 namespace App\Services;
 
-use App\Repositories\ProductRepository;
-use App\Helpers\{ImageHelper, PriceHelper, ValidationHelper};
-use App\Constants\{ProductConsts, SystemConsts};
-use App\Enums\ProductStatus;
-use Illuminate\Support\Facades\{DB, Cache};
+use App\Repositories\{ModelName}Repository;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
-class ProductService
+class {ModelName}Service
 {
-    protected $productRepository;
+    protected ${repositoryName};
 
-    public function __construct(ProductRepository $productRepository)
+    public function __construct({ModelName}Repository ${repositoryName})
     {
-        $this->productRepository = $productRepository;
+        $this->{repositoryName} = ${repositoryName};
     }
 
-    public function createProduct(array $data)
+    public function {methodName}(array $data)
     {
-        // 必ずValidationHelperでバリデーション
-        ValidationHelper::validateProductData($data);
-
         try {
             return DB::transaction(function () use ($data) {
-                // 価格処理は必ずPriceHelper
-                $data['price'] = PriceHelper::sanitize($data['price']);
-                $data['status'] = ProductStatus::DRAFT;
-                $data['product_code'] = $this->generateProductCode();
+                // ビジネスロジック実装
 
-                $product = $this->productRepository->create($data);
+                // Repository呼び出し
+                $result = $this->{repositoryName}->{methodName}($data);
 
-                // 画像処理は必ずImageHelper
-                if (isset($data['images'])) {
-                    ImageHelper::processProductImages($product, $data['images']);
-                }
+                // データ整形・加工
 
-                // キャッシュクリア
-                Cache::tags(['products'])->flush();
-
-                return $product;
+                return $result;
             });
         } catch (\Exception $e) {
-            Log::error('Product creation failed: ' . $e->getMessage());
+            Log::error('Error message: ' . $e->getMessage());
             throw $e;
         }
     }
-
-    protected function generateProductCode(): string
-    {
-        return ProductConsts::PRODUCT_CODE_PREFIX .
-               str_pad(random_int(1, 99999), ProductConsts::PRODUCT_CODE_LENGTH - 3, '0', STR_PAD_LEFT);
-    }
-
-    public function getProductList(array $filters = [], ?ProductStatus $status = null, int $perPage = null): Collection
-    {
-        $perPage = $perPage ?? SystemConsts::DEFAULT_PER_PAGE;
-
-        $cacheKey = "products:list:" . md5(serialize($filters + ['status' => $status, 'per_page' => $perPage]));
-
-        return Cache::tags(['products'])->remember($cacheKey, SystemConsts::CACHE_MEDIUM, function() use ($filters, $status, $perPage) {
-            return $this->productRepository->getList($filters, $status, $perPage);
-        });
-    }
 }
 ```
 
-## Livewireコンポーネントルール
+## Repository層のルール
 
-### 共通機能の継承
+### 責務
+- データアクセスロジックの実装
+- CRUD操作の提供
+- クエリの記述
+- データ取得方法の隠蔽
+
+### 注意事項
+- データの整形・加工は行わない（Service層で実装）
+- ビジネスロジックは含めない
+
+### インターフェース実装
 ```php
 <?php
-namespace App\Livewire\User;
+namespace App\Repositories\Interfaces;
 
-use Livewire\Component;
-use App\Traits\LivewireHelpers;
-use App\Helpers\{PriceHelper, DateHelper};
-
-class ProductList extends Component
+interface {ModelName}RepositoryInterface
 {
-    use LivewireHelpers;
-
-    public function render()
-    {
-        $products = $this->getProducts();
-
-        // 必ず共通ヘルパーでフォーマット
-        $products->transform(function($product) {
-            $product->formatted_price = PriceHelper::format($product->price);
-            $product->formatted_date = DateHelper::formatJapanese($product->created_at);
-            return $product;
-        });
-
-        return view('livewire.user.product-list', compact('products'));
-    }
+    public function findById(int $id);
+    public function create(array $data);
+    public function update(int $id, array $data);
+    public function delete(int $id);
 }
 ```
 
-## Bladeテンプレートルール
-
-### 共通コンポーネントの使用
-```blade
-{{-- 必ず共通レイアウトを使用 --}}
-@extends('layouts.user')
-
-{{-- 必ず共通コンポーネントを使用 --}}
-<x-shared.header />
-
-<div class="container">
-    {{-- 必ずshared/form配下のコンポーネントを使用 --}}
-    <x-shared.form.input
-        name="name"
-        label="商品名"
-        :value="old('name')"
-        required
-    />
-
-    <x-shared.form.button
-        type="submit"
-        class="btn-primary"
-    >
-        保存
-    </x-shared.form.button>
-</div>
-
-<x-shared.footer />
-```
-
-### 価格・日付表示ルール
-```blade
-{{-- ❌ 直接表示禁止 --}}
-{{ $product->price }}
-{{ $order->created_at }}
-
-{{-- ✅ 必ずヘルパー使用 --}}
-{{ PriceHelper::format($product->price) }}
-{{ DateHelper::formatJapanese($order->created_at) }}
-```
-
-## フロントエンドルール
-
-### JavaScript共通関数の使用
-```javascript
-// 必ずcommon配下の関数を使用
-import {
-    showNotification,
-    validateForm,
-    apiRequest,
-    formatPrice,
-    formatDate
-} from '../common/utils.js';
-
-// フォーム送信処理
-document.getElementById('product-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    // 必ず共通バリデーション使用
-    if (!validateForm(e.target)) {
-        return;
-    }
-
-    try {
-        // 必ず共通API関数使用
-        const result = await apiRequest('/api/products', 'POST',
-            new FormData(e.target)
-        );
-
-        // 必ず共通通知関数使用
-        showNotification('商品を保存しました', 'success');
-
-    } catch (error) {
-        showNotification('エラーが発生しました', 'error');
-    }
-});
-```
-
-### CSS共通クラスの使用
-```html
-<!-- 必ず定義済みのCSSクラスを使用 -->
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">商品情報</h3>
-    </div>
-    <div class="card-body">
-        <button class="btn btn-primary btn-loading" type="submit">
-            保存
-        </button>
-        <button class="btn btn-secondary" type="button">
-            キャンセル
-        </button>
-    </div>
-</div>
-```
-
-## 認証・認可ルール
-
-### マルチガード対応
-```php
-// 必ずガード別にミドルウェア適用
-Route::group(['middleware' => 'auth:user', 'prefix' => 'user'], function() {
-    // User routes
-});
-
-Route::group(['middleware' => 'auth:owner', 'prefix' => 'owner'], function() {
-    // Owner routes
-});
-```
-
-## ファイル保存ルール
-
-### 画像保存時の共通処理
-```php
-// 必ずImageHelperを使用
-class ProductImageService
-{
-    public function store($image, $productId)
-    {
-        // 共通画像処理を使用
-        $path = ImageHelper::storeProductImage($image, $productId);
-        $thumbnailPath = ImageHelper::createThumbnail($path);
-
-        return [
-            'original' => $path,
-            'thumbnail' => $thumbnailPath
-        ];
-    }
-}
-```
-
-## テストルール
-
-### 共通テストヘルパーの使用
+### Repository実装
 ```php
 <?php
-namespace Tests\Feature\User;
+namespace App\Repositories;
 
-use Tests\TestCase;
-use Tests\Helpers\{UserTestHelper, ProductTestHelper};
+use App\Models\{ModelName};
+use App\Repositories\Interfaces\{ModelName}RepositoryInterface;
 
-class ProductTest extends TestCase
+class {ModelName}Repository implements {ModelName}RepositoryInterface
 {
-    use UserTestHelper, ProductTestHelper;
-
-    public function test_user_can_view_products()
+    public function findById(int $id)
     {
-        // 必ず共通テストヘルパー使用
-        $user = $this->createTestUser();
-        $products = $this->createTestProducts(5);
+        return {ModelName}::find($id);
+    }
 
-        $response = $this->actingAs($user, 'user')
-                         ->get('/user/products');
+    public function create(array $data)
+    {
+        return {ModelName}::create($data);
+    }
 
-        $response->assertStatus(200);
+    public function update(int $id, array $data)
+    {
+        $model = {ModelName}::findOrFail($id);
+        $model->update($data);
+        return $model;
+    }
+
+    public function delete(int $id)
+    {
+        return {ModelName}::destroy($id);
+    }
+
+    // 複雑なクエリの例
+    public function findWithConditions(array $conditions)
+    {
+        $query = {ModelName}::query();
+
+        if (isset($conditions['name'])) {
+            $query->where('name', 'like', '%' . $conditions['name'] . '%');
+        }
+
+        return $query->get();
     }
 }
 ```
 
-## 共通化チェックリスト
+## Model層のルール
 
-### 新機能実装時の確認事項
-- [ ] 既存のHelperクラスで対応可能か確認
-- [ ] 適切なTraitを使用しているか
-- [ ] 共通CSSコンポーネントを使用しているか
-- [ ] 共通JavaScriptライブラリを使用しているか
-- [ ] 共通Bladeコンポーネントを使用しているか
-- [ ] 価格表示時にPriceHelperを使用しているか
-- [ ] 日付表示時にDateHelperを使用しているか
-- [ ] 画像処理時にImageHelperを使用しているか
+### 責務
+- データ構造の定義
+- リレーションの定義
+- アクセサ・ミューテータの実装
+- スコープの定義
 
-### 新しい共通機能が必要な場合
-1. 同様の処理が3箇所以上で使用される場合は共通化を検討
-2. Helper/Trait/Service いずれかに切り出し
-3. 既存コードも同時にリファクタリング
-4. テストコードも併せて作成
+```php
+<?php
+namespace App\Models;
 
-## 定数・Enum使用チェックリスト
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-### 新機能実装時の確認事項
-- [ ] マジックナンバーを使用していないか
-- [ ] 文字列リテラルでステータスを管理していないか
-- [ ] 適切なEnumを定義・使用しているか
-- [ ] 定数ファイルに設定値を定義しているか
-- [ ] Bladeテンプレートで定数・Enumを活用しているか
-- [ ] JavaScript側でも定数を共有しているか
+class {ModelName} extends Model
+{
+    use HasFactory, SoftDeletes;
 
-### Enum/定数作成の判断基準
-1. **Enum使用ケース**
-   - 固定された選択肢がある（ステータス、タイプ、カテゴリなど）
-   - 選択肢にビジネスロジックが関連する
-   - 表示用ラベルや関連メソッドが必要
+    protected $fillable = [
+        // 設定可能フィールド
+    ];
 
-2. **定数ファイル使用ケース**
-   - 設定値・閾値・制限値
-   - システム全体で共有する数値
-   - パフォーマンスに関わる設定値
+    protected $guarded = ['id'];
+
+    protected $dates = ['deleted_at'];
+
+    protected $casts = [
+        // キャスト設定
+    ];
+
+    // リレーション定義
+    public function relatedModel()
+    {
+        return $this->belongsTo(RelatedModel::class);
+    }
+}
+```
+
+## 依存性注入（DI）設定
+
+### AppServiceProvider登録
+```php
+// app/Providers/AppServiceProvider.php
+public function register()
+{
+    // Service層のバインド
+    $this->app->bind('App\Services\{ServiceName}');
+
+    // Repository層のバインド
+    $this->app->bind(
+        'App\Repositories\Interfaces\{ModelName}RepositoryInterface',
+        'App\Repositories\{ModelName}Repository'
+    );
+}
+```
+
+## テスト実装ルール
+
+### Service層テスト
+- Repository層をモック化
+- ビジネスロジックの動作確認
+- 例外処理のテスト
+
+### Repository層テスト
+- データベース操作の確認
+- ファクトリーを使用したテストデータ作成
+
+## 命名規約
+
+### ファイル・クラス名
+- Controller: `{ModelName}Controller`
+- Service: `{ModelName}Service`
+- Repository: `{ModelName}Repository`
+- Interface: `{ModelName}RepositoryInterface`
+
+### メソッド名
+- 取得: `find`, `get`, `show`
+- 作成: `create`, `store`
+- 更新: `update`
+- 削除: `delete`, `destroy`
+
+## エラーハンドリング
+
+### Service層での例外処理
+```php
+try {
+    // 処理
+} catch (ModelNotFoundException $e) {
+    Log::warning('Model not found: ' . $e->getMessage());
+    throw $e;
+} catch (\Exception $e) {
+    Log::error('Unexpected error: ' . $e->getMessage());
+    throw new ServiceException('処理中にエラーが発生しました', 0, $e);
+}
+```
 
 ## パフォーマンス考慮事項
 
-### 共通化による最適化
-- CSS/JSは必要な部分のみロード（vite設定活用）
-- 共通画像はCDN配信を想定した設計
-- キャッシュ戦略は共通ヘルパーで統一
+- Repository層でのEager Loading実装
+- 不要なクエリの削減
+- キャッシュの適切な活用
 
-これらのルールに従って、保守性・再利用性・統一性の高いマルチログイン対応ECサイトを開発してください。共通化により開発効率と品質の向上を図ります。
+## セキュリティ考慮事項
+
+- 入力値の適切なバリデーション
+- SQLインジェクション対策（Eloquent使用）
+- 認可処理の適切な実装
+
+これらのルールに従って、保守性・可読性・テスト容易性の高いLaravelアプリケーションを開発してください。

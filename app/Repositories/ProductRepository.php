@@ -150,6 +150,21 @@ class ProductRepository
         if (!empty($filters['owner_id'])) {
             $query->where('owner_id', $filters['owner_id']);
         }
+
+        // ステータスフィルター（オーナー用）
+        if (!empty($filters['status'])) {
+            switch ($filters['status']) {
+                case 'active':
+                    $query->where('is_active', true);
+                    break;
+                case 'inactive':
+                    $query->where('is_active', false);
+                    break;
+                case 'all':
+                    // 全件表示（フィルターなし）
+                    break;
+            }
+        }
     }
 
     /**
@@ -202,5 +217,16 @@ class ProductRepository
         ];
 
         return $categories;
+    }
+
+    /**
+     * オーナー別商品詳細を取得
+     */
+    public function findByIdAndOwner(int $id, int $ownerId): ?Product
+    {
+        return Product::with(['owner', 'images', 'coverImage'])
+            ->where('id', $id)
+            ->where('owner_id', $ownerId)
+            ->first();
     }
 }

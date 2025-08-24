@@ -235,4 +235,5 @@ class Product extends Model
               ->orWhere('category', 'like', "%{$search}%");
         });
     }
+
 }

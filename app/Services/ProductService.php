@@ -266,4 +266,24 @@ class ProductService
             throw $e;
         }
     }
+
+    /**
+     * オーナー別商品詳細を取得
+     */
+    public function getProductByIdAndOwner(int $id, int $ownerId)
+    {
+        try {
+            $product = $this->productRepository->findByIdAndOwner($id, $ownerId);
+
+            if ($product) {
+                $product->formatted_price = PriceHelper::format($product->price);
+                $product->image_url = ImageHelper::getProductThumbnailUrl($product);
+            }
+
+            return $product;
+        } catch (\Exception $e) {
+            Log::error('Owner product detail retrieval failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
 }

@@ -229,53 +229,213 @@
 <script>
 // ファイルアップロード時のプレビュー表示
 document.addEventListener('DOMContentLoaded', function() {
-    // カバー画像のプレビュー
-    const coverImageInput = document.getElementById('cover_image');
-    if (coverImageInput) {
-        coverImageInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const preview = document.createElement('img');
-                    preview.src = e.target.result;
-                    preview.className = 'mt-2 h-32 w-32 object-cover rounded-lg';
+    console.log('DOM loaded, initializing file upload handlers');
 
-                    const container = coverImageInput.closest('div').querySelector('.space-y-1');
-                    const existingPreview = container.querySelector('img');
-                    if (existingPreview) {
-                        existingPreview.remove();
-                    }
-                    container.appendChild(preview);
-                };
-                reader.readAsDataURL(file);
+    // カバー画像の処理関数
+    function handleCoverImage(file) {
+        console.log('Handling cover image:', file.name, file.size);
+
+        const fileName = file.name;
+        const fileSize = (file.size / 1024).toFixed(2) + ' KB';
+
+        const fileInfo = document.createElement('div');
+        fileInfo.className = 'mt-2 p-2 bg-gray-50 rounded border file-info';
+        fileInfo.innerHTML = `
+            <div class="flex items-center space-x-2">
+                <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span class="text-sm font-medium text-gray-700">${fileName}</span>
+                <span class="text-xs text-gray-500">(${fileSize})</span>
+            </div>
+        `;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.createElement('img');
+            preview.src = e.target.result;
+            preview.className = 'mt-2 h-32 w-32 object-cover rounded-lg';
+
+            const container = coverImageInput.closest('.border-dashed').querySelector('.space-y-1');
+            console.log('Cover container found:', container);
+
+            if (container) {
+                // 既存のプレビューとファイル情報を削除
+                const existingPreview = container.querySelector('img');
+                const existingFileInfo = container.querySelector('.file-info');
+                if (existingPreview) {
+                    existingPreview.remove();
+                }
+                if (existingFileInfo) {
+                    existingFileInfo.remove();
+                }
+
+                container.appendChild(fileInfo);
+                container.appendChild(preview);
+                console.log('Cover image preview added');
             }
-        });
+        };
+        reader.readAsDataURL(file);
     }
 
-    // 商品画像のプレビュー
-    const imagesInput = document.getElementById('images');
-    if (imagesInput) {
-        imagesInput.addEventListener('change', function(e) {
-            const files = Array.from(e.target.files);
-            const container = imagesInput.closest('div').querySelector('.space-y-1');
+    // 商品画像の処理関数
+    function handleProductImages(files) {
+        console.log('Handling product images:', files.length, 'files');
 
-            // 既存のプレビューを削除
+        const container = imagesInput.closest('.border-dashed').querySelector('.space-y-1');
+        console.log('Images container found:', container);
+
+        if (container) {
+            // 既存のプレビューとファイル情報を削除
             const existingPreviews = container.querySelectorAll('.image-preview');
+            const existingFileInfos = container.querySelectorAll('.file-info');
             existingPreviews.forEach(preview => preview.remove());
+            existingFileInfos.forEach(info => info.remove());
 
-            // 新しいプレビューを追加
-            files.forEach(file => {
+            // ファイル情報とプレビューを追加
+            files.forEach((file, index) => {
+                console.log('Processing image file:', file.name, file.size);
+                const fileName = file.name;
+                const fileSize = (file.size / 1024).toFixed(2) + ' KB';
+
+                const fileInfo = document.createElement('div');
+                fileInfo.className = 'mt-2 p-2 bg-gray-50 rounded border file-info';
+                fileInfo.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span class="text-sm font-medium text-gray-700">${fileName}</span>
+                            <span class="text-xs text-gray-500">(${fileSize})</span>
+                        </div>
+                        <span class="text-xs text-gray-400">画像 ${index + 1}</span>
+                    </div>
+                `;
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const preview = document.createElement('img');
                     preview.src = e.target.result;
                     preview.className = 'mt-2 h-24 w-24 object-cover rounded-lg image-preview';
+
+                    container.appendChild(fileInfo);
                     container.appendChild(preview);
+                    console.log('Image preview added for:', fileName);
                 };
                 reader.readAsDataURL(file);
             });
+        }
+    }
+
+    // カバー画像のプレビュー
+    const coverImageInput = document.getElementById('cover_image');
+    console.log('Cover image input found:', coverImageInput);
+
+    if (coverImageInput) {
+        // ファイル選択イベント
+        coverImageInput.addEventListener('change', function(e) {
+            console.log('Cover image changed:', e.target.files);
+            const file = e.target.files[0];
+            if (file) {
+                handleCoverImage(file);
+            }
         });
+
+        // ドラッグ＆ドロップイベント
+        const coverDropZone = coverImageInput.closest('.border-dashed');
+        if (coverDropZone) {
+            coverDropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.add('border-blue-400', 'bg-blue-50');
+            });
+
+            coverDropZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('border-blue-400', 'bg-blue-50');
+            });
+
+            coverDropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('border-blue-400', 'bg-blue-50');
+
+                const files = e.dataTransfer.files;
+                console.log('Cover image dropped:', files);
+
+                if (files.length > 0) {
+                    const file = files[0];
+                    if (file.type.startsWith('image/')) {
+                        // input要素にファイルを設定
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        coverImageInput.files = dt.files;
+
+                        handleCoverImage(file);
+                    } else {
+                        alert('画像ファイルを選択してください。');
+                    }
+                }
+            });
+        }
+    }
+
+    // 商品画像のプレビュー
+    const imagesInput = document.getElementById('images');
+    console.log('Images input found:', imagesInput);
+
+    if (imagesInput) {
+        // ファイル選択イベント
+        imagesInput.addEventListener('change', function(e) {
+            console.log('Images changed:', e.target.files);
+            const files = Array.from(e.target.files);
+
+            if (files.length > 0) {
+                handleProductImages(files);
+            }
+        });
+
+        // ドラッグ＆ドロップイベント
+        const imagesDropZone = imagesInput.closest('.border-dashed');
+        if (imagesDropZone) {
+            imagesDropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.add('border-blue-400', 'bg-blue-50');
+            });
+
+            imagesDropZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('border-blue-400', 'bg-blue-50');
+            });
+
+            imagesDropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('border-blue-400', 'bg-blue-50');
+
+                const files = Array.from(e.dataTransfer.files);
+                console.log('Product images dropped:', files);
+
+                if (files.length > 0) {
+                    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+                    if (imageFiles.length > 0) {
+                        // input要素にファイルを設定
+                        const dt = new DataTransfer();
+                        imageFiles.forEach(file => dt.items.add(file));
+                        imagesInput.files = dt.files;
+
+                        handleProductImages(imageFiles);
+                    } else {
+                        alert('画像ファイルを選択してください。');
+                    }
+                }
+            });
+        }
     }
 });
 </script>

@@ -240,12 +240,28 @@ class ImageHelper
         // ファイル名を生成
         $filename = self::generateImageFilename($file->getClientOriginalName());
 
-        // パスを生成
-        $path = self::generateImagePath($directory, $filename);
+        // 日付ベースのディレクトリパスを生成
+        $datePath = date('Y/m/d');
+        $fullDirectory = $directory . '/' . $datePath;
 
-        // ファイルを保存
-        $file->storeAs('public/' . $directory, $filename);
+        // ファイルを保存（publicディスクを使用）
+        $file->storeAs($fullDirectory, $filename, 'public');
 
-        return $path;
+        // ファイルが実際に保存されたか確認
+        if (!Storage::disk('public')->exists($fullDirectory . '/' . $filename)) {
+            throw new \Exception('Failed to save file to storage: ' . $fullDirectory . '/' . $filename);
+        }
+
+        // ログ出力（デバッグ用）
+        \Illuminate\Support\Facades\Log::info('Image uploaded successfully', [
+            'storage_path' => $fullDirectory,
+            'filename' => $filename,
+            'full_path' => $fullDirectory . '/' . $filename,
+            'exists' => Storage::disk('public')->exists($fullDirectory . '/' . $filename),
+            'size' => Storage::disk('public')->size($fullDirectory . '/' . $filename)
+        ]);
+
+        // データベースに保存するパスを返す（日付パスを含む）
+        return $fullDirectory . '/' . $filename;
     }
 }

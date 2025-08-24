@@ -6,7 +6,7 @@ use App\Repositories\ProductRepository;
 use App\Helpers\{ImageHelper, PriceHelper};
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\{Log, Storage};
 
 class ProductService
 {
@@ -295,6 +295,11 @@ class ProductService
         try {
             $imagePath = ImageHelper::uploadProductImage($file, 'products');
 
+            // ファイルが実際に保存されているか確認
+            if (!Storage::disk('public')->exists($imagePath)) {
+                throw new \Exception('File was not saved to storage: ' . $imagePath);
+            }
+
             // 既存のカバー画像を削除
             $product = $this->productRepository->findById($productId);
             if ($product && $product->cover_image_id) {
@@ -317,9 +322,16 @@ class ProductService
             $image = $this->productRepository->createImage($imageData);
 
             // 商品のカバー画像IDを更新
-            $this->productRepository->update($productId, ['cover_image_id' => $image->id]);
+            $result = $this->productRepository->update($productId, ['cover_image_id' => $image->id]);
 
-            Log::info('Cover image uploaded successfully for product: ' . $productId);
+            Log::info('Cover image uploaded successfully for product: ' . $productId, [
+                'product_id' => $productId,
+                'image_id' => $image->id,
+                'update_result' => $result,
+                'file_path' => $imagePath,
+                'storage_exists' => Storage::disk('public')->exists($imagePath),
+                'file_size' => Storage::disk('public')->size($imagePath)
+            ]);
 
             return $image;
         } catch (\Exception $e) {
@@ -339,6 +351,11 @@ class ProductService
             foreach ($files as $index => $file) {
                 $imagePath = ImageHelper::uploadProductImage($file, 'products');
 
+                // ファイルが実際に保存されているか確認
+                if (!Storage::disk('public')->exists($imagePath)) {
+                    throw new \Exception('File was not saved to storage: ' . $imagePath);
+                }
+
                 $imageData = [
                     'product_id' => $productId,
                     'file_path' => $imagePath,
@@ -353,6 +370,14 @@ class ProductService
 
                 $image = $this->productRepository->createImage($imageData);
                 $uploadedImages[] = $image;
+
+                Log::info('Product image uploaded: ' . $imagePath, [
+                    'product_id' => $productId,
+                    'image_id' => $image->id,
+                    'file_path' => $imagePath,
+                    'storage_exists' => Storage::disk('public')->exists($imagePath),
+                    'file_size' => Storage::disk('public')->size($imagePath)
+                ]);
             }
 
             Log::info('Product images uploaded successfully for product: ' . $productId);

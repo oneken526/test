@@ -246,8 +246,8 @@ class ProductRepository
         $image = \App\Models\ProductImage::find($imageId);
         if ($image) {
             // ファイルを削除
-            if (\Illuminate\Support\Facades\Storage::exists('public/' . $image->path)) {
-                \Illuminate\Support\Facades\Storage::delete('public/' . $image->path);
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($image->path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($image->path);
             }
             return $image->delete();
         }
